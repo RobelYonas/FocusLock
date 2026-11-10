@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <!-- Windows Forms is referenced only for the tray icon (NotifyIcon); no Forms UI is used. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>FocusLock.App</RootNamespace>
+    <AssemblyName>FocusLock</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\FocusLock.ico</ApplicationIcon>
+    <!-- WPF0001: Application.ThemeMode (the built-in Fluent theme) is still marked experimental in WPF.
+         WFO0003: the Windows Forms analyzer wants DPI settings out of the manifest, but for a WPF app the manifest is the right place. -->
+    <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Keep the WPF types unambiguous: drop the implicit Windows Forms usings. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\FocusLock.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FocusLock.Core\FocusLock.Core.csproj" />
+  </ItemGroup>
+
+</Project>

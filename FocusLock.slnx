@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FocusLock.App/FocusLock.App.csproj" />
+    <Project Path="src/FocusLock.Core/FocusLock.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FocusLock.Tests/FocusLock.Tests.csproj" />
+  </Folder>
+</Solution>
