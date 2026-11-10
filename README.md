@@ -125,3 +125,8 @@ named pipes through the same `ISessionService` contract.
 | `%AppData%\FocusLock\logs\focuslock-YYYY-MM-DD.log` | Daily log, JSON lines, seven days kept. |
 
 If a settings or stats file cannot be read it is renamed to `.bak` and defaults are used.
+
+## License
+
+FocusLock is free for personal use. Selling it, sharing it, or using it commercially needs written permission
+from the author. See [LICENSE](LICENSE) for the full terms.
