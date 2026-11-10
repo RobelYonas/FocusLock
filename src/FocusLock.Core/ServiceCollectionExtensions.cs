@@ -8,6 +8,7 @@ using FocusLock.Core.Processes;
 using FocusLock.Core.Sessions;
 using FocusLock.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace FocusLock.Core;
 
@@ -34,6 +35,10 @@ public static class ServiceCollectionExtensions
         // Detection
         services.AddSingleton<IGameDetector, SteamGameDetector>();
         services.AddSingleton<IGameDetector, EpicGameDetector>();
+        services.AddSingleton<IGameDetector, GogGameDetector>();
+        services.AddSingleton<IGameDetector, UbisoftGameDetector>();
+        services.AddSingleton<IGameDetector>(sp => PublisherGameDetector.Ea(sp.GetRequiredService<IRegistry>(), sp.GetRequiredService<ILogger<PublisherGameDetector>>()));
+        services.AddSingleton<IGameDetector>(sp => PublisherGameDetector.BattleNet(sp.GetRequiredService<IRegistry>(), sp.GetRequiredService<ILogger<PublisherGameDetector>>()));
         services.AddSingleton<IGameDetector, LauncherDetector>();
         services.AddSingleton<IGameDetector, CustomListDetector>();
         services.AddSingleton<GameCatalog>();

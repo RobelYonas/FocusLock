@@ -76,11 +76,10 @@ public sealed partial class SessionController : ObservableObject
     {
         LastSummary = null;
         var plan = BuildPlan(focusLength);
-        var entries = _catalog.Entries;
         var settings = _settings.Current;
         await Task.Run(async () =>
         {
-            var policy = _policies.Build(entries, settings);
+            var policy = await _policies.BuildFreshAsync(_catalog, settings).ConfigureAwait(false);
             await _sessions.StartAsync(plan, policy).ConfigureAwait(false);
         });
         _logger.LogInformation("Session of {Length} started from the UI", focusLength);

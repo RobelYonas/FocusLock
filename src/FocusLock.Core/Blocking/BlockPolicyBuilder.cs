@@ -11,6 +11,13 @@ public sealed class BlockPolicyBuilder(IFileSystem fileSystem, ILogger<BlockPoli
     private const int MaxDepth = 3;
     private const int MaxDirectoriesPerRule = 400;
 
+    /// <summary>Scans for games again first, so games installed since the last scan are blocked too.</summary>
+    public async Task<BlockPolicy> BuildFreshAsync(GameCatalog catalog, AppSettings settings, CancellationToken cancellationToken = default)
+    {
+        await catalog.RefreshAsync(cancellationToken).ConfigureAwait(false);
+        return Build(catalog.Entries, settings);
+    }
+
     public BlockPolicy Build(IReadOnlyList<CatalogEntry> entries, AppSettings settings)
     {
         var rules = new List<BlockRule>();

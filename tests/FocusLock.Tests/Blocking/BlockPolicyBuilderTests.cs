@@ -73,6 +73,31 @@ public class BlockPolicyBuilderTests
         Assert.Contains(policy.Allow, rule => rule.Kind == MatchKind.Folder && rule.Target == @"C:\Games\Foo\Tools");
     }
 
+    [Fact]
+    public async Task BuildFreshAsync_scans_again_so_games_installed_since_the_last_scan_are_blocked()
+    {
+        var detector = new ChangingDetector();
+        var catalog = new GameCatalog([detector], TestSettings.Service(), NullLogger<GameCatalog>.Instance);
+        await catalog.RefreshAsync();
+        detector.Games.Add(new DetectedGame("steam:9", "New Game", GameSource.Steam, @"C:\Games\New", MatchKind.Folder));
+
+        var policy = await new BlockPolicyBuilder(_fileSystem, NullLogger<BlockPolicyBuilder>.Instance).BuildFreshAsync(catalog, new AppSettings());
+
+        Assert.Equal("New Game", Assert.Single(policy.Rules).Name);
+        Assert.Single(catalog.Entries);
+    }
+
     private BlockPolicy Build(IReadOnlyList<CatalogEntry> entries, AppSettings settings) =>
         new BlockPolicyBuilder(_fileSystem, NullLogger<BlockPolicyBuilder>.Instance).Build(entries, settings);
+
+    /// <summary>A detector whose results can change between scans, like a game being installed.</summary>
+    private sealed class ChangingDetector : IGameDetector
+    {
+        public List<DetectedGame> Games { get; } = [];
+
+        public GameSource Source => GameSource.Steam;
+
+        public Task<IReadOnlyList<DetectedGame>> DetectAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<DetectedGame>>(Games.ToList());
+    }
 }

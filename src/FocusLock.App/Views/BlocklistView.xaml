@@ -35,7 +35,8 @@
 
     <!-- One source section -->
     <DataTemplate x:Key="GroupCard" DataType="{x:Type vm:GameGroupViewModel}">
-      <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,16">
+      <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,16"
+              Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}">
         <StackPanel>
           <Grid Margin="16,14,16,12">
             <Grid.ColumnDefinitions>

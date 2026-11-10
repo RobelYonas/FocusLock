@@ -11,6 +11,12 @@ public sealed class WindowsRegistry : IRegistry
         return key?.GetValue(valueName) as string;
     }
 
+    public IReadOnlyList<string> GetSubKeyNames(RegistryRoot root, string subKey)
+    {
+        using var key = Hive(root).OpenSubKey(subKey);
+        return key?.GetSubKeyNames() ?? [];
+    }
+
     public void SetString(RegistryRoot root, string subKey, string valueName, string value)
     {
         using var key = Hive(root).CreateSubKey(subKey, writable: true);

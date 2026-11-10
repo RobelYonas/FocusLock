@@ -58,6 +58,9 @@ public sealed partial class GameGroupViewModel(string title, string emptyText, G
 
     public bool HasItems => Items.Count > 0;
 
+    /// <summary>Stores with no games are hidden to keep the page short; "Added by you" always shows.</summary>
+    public bool IsVisible => HasItems || CanAdd;
+
     public string CountText => Items.Count switch
     {
         0 => string.Empty,
@@ -80,6 +83,7 @@ public sealed partial class GameGroupViewModel(string title, string emptyText, G
         }
 
         OnPropertyChanged(nameof(HasItems));
+        OnPropertyChanged(nameof(IsVisible));
         OnPropertyChanged(nameof(CountText));
     }
 }

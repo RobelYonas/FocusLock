@@ -11,6 +11,9 @@ public interface IRegistry
 {
     string? GetString(RegistryRoot root, string subKey, string valueName);
 
+    /// <summary>Names of the direct subkeys, or an empty list when the key does not exist.</summary>
+    IReadOnlyList<string> GetSubKeyNames(RegistryRoot root, string subKey);
+
     void SetString(RegistryRoot root, string subKey, string valueName, string value);
 
     void DeleteValue(RegistryRoot root, string subKey, string valueName);

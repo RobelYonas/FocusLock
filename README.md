@@ -16,6 +16,8 @@ and games are allowed during breaks. When the session ends you get a short summa
   "I choose to end this session early."
 - `FocusLock.exe --minimized` starts straight into the tray; the "start when I sign in" setting uses this.
 - Starting FocusLock a second time just brings the running window back.
+- Games are found automatically from Steam, Epic, GOG, the EA app, Ubisoft Connect and Battle.net. The list is
+  refreshed every time a session starts, so a game installed a minute ago is still blocked.
 
 ## Requirements
 
@@ -84,7 +86,7 @@ thing runs in unit tests with fakes and no real processes, files or registry.
 |-----------------|------------------|
 | `Abstractions`  | Interfaces for everything that touches the system: `IClock`, `ITickTimer`, `IFileSystem`, `IRegistry`, `IAppEnvironment`, `IProcessProvider`, `IProcessTerminator`, `IProcessWatcher`. |
 | `Platform`      | The Windows implementations of those interfaces. This is the only folder with real system calls. |
-| `Detection`     | `IGameDetector` and one detector per source: Steam (reads `libraryfolders.vdf` and the app manifests), Epic (reads the launcher's `.item` manifests), launchers (by process name) and the user's custom list. `GameCatalog` runs them all and applies the user's on/off toggles. |
+| `Detection`     | `IGameDetector` and one detector per source: Steam (reads `libraryfolders.vdf` and the app manifests), Epic (reads the launcher's `.item` manifests), GOG (registry `GOG.com\Games`), Ubisoft Connect (registry `Ubisoft\Launcher\Installs`), EA app and Battle.net (`PublisherGameDetector`: the Windows installed-programs list, filtered by publisher), launchers (by process name) and the user's custom list. `GameCatalog` runs them all and applies the user's on/off toggles. |
 | `Blocking`      | `BlockPolicy` (plain data: block rules plus allow rules), `BlockRuleEvaluator` (folder, executable and process-name matching; the allowlist always wins; FocusLock itself and the Windows folder are never touched) and `BlockingEngine` (closes matching processes while active). |
 | `Processes`     | `PollingProcessWatcher`: compares process lists once a second and reports new ones. It sits behind `IProcessWatcher`, so a WMI-event-based watcher can replace it later. |
 | `Sessions`      | `SessionPlan` (single block or Pomodoro cycles), `FocusSessionEngine` (a pure state machine driven by timestamps, so it never drifts) and `ISessionService`, the only session API the UI uses. |
@@ -93,8 +95,9 @@ thing runs in unit tests with fakes and no real processes, files or registry.
 
 How a session works:
 
-1. The UI builds a `SessionPlan` from the chosen length (and Pomodoro settings) and a `BlockPolicy` from the
-   catalog's enabled games plus the allowlist, then calls `ISessionService.StartAsync`.
+1. The UI builds a `SessionPlan` from the chosen length (and Pomodoro settings). `BlockPolicyBuilder.BuildFreshAsync`
+   scans for games again, so new installs are covered, and builds a `BlockPolicy` from the enabled games plus the
+   allowlist. Then the UI calls `ISessionService.StartAsync`.
 2. `InProcessSessionService` starts the engine, activates `BlockingEngine` with the policy and ticks once a second.
    During breaks blocking is paused; the next focus block turns it back on.
 3. `BlockingEngine` listens to `IProcessWatcher`. Every new process goes through `BlockRuleEvaluator`; matches are
