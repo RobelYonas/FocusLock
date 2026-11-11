@@ -9,7 +9,8 @@ public sealed record SessionState(
     TimeSpan RemainingInPhase,
     TimeSpan RemainingTotal,
     double PhaseProgress,
-    int BlockedAttempts)
+    int BlockedAttempts,
+    bool CanEndEarly = true)
 {
     public static SessionState Idle { get; } = new(false, SessionPhase.Focus, 0, 0, TimeSpan.Zero, TimeSpan.Zero, 0d, 0);
 }

@@ -19,6 +19,7 @@ public sealed partial class ActiveSessionViewModel : ObservableObject
     private readonly StrictModeGate _gate = new();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEndEarlyButton))]
     private bool _isGateOpen;
 
     [ObservableProperty]
@@ -61,6 +62,11 @@ public sealed partial class ActiveSessionViewModel : ObservableObject
 
     public string GateSentence => StrictModeGate.Sentence;
 
+    /// <summary>False when the user committed to the timer; the session then runs to the end.</summary>
+    public bool CanEndEarly => State.CanEndEarly;
+
+    public bool ShowEndEarlyButton => CanEndEarly && !IsGateOpen;
+
     public string GateWaitText
     {
         get
@@ -79,7 +85,7 @@ public sealed partial class ActiveSessionViewModel : ObservableObject
     /// <summary>Shows the strict-mode panel. Also called from the tray menu.</summary>
     public void OpenGate()
     {
-        if (!_controller.IsRunning)
+        if (!_controller.IsRunning || !CanEndEarly)
         {
             return;
         }
@@ -94,6 +100,11 @@ public sealed partial class ActiveSessionViewModel : ObservableObject
     [RelayCommand]
     private async Task EndEarlyAsync()
     {
+        if (!CanEndEarly)
+        {
+            return;
+        }
+
         if (_settings.Current.StrictMode)
         {
             OpenGate();

@@ -34,6 +34,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _strictMode;
 
     [ObservableProperty]
+    private bool _commitToTimer;
+
+    [ObservableProperty]
     private bool _launchAtStartup;
 
     [ObservableProperty]
@@ -67,6 +70,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnCloseAlreadyRunningChanged(bool value) => Save(settings => settings.CloseAlreadyRunningGames = value);
 
     partial void OnStrictModeChanged(bool value) => Save(settings => settings.StrictMode = value);
+
+    partial void OnCommitToTimerChanged(bool value) => Save(settings => settings.CommitToTimer = value);
 
     partial void OnShowNotificationsChanged(bool value) => Save(settings => settings.ShowNotifications = value);
 
@@ -127,6 +132,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             CloseAlreadyRunning = settings.CloseAlreadyRunningGames;
             BlockLaunchers = settings.BlockLaunchers;
             StrictMode = settings.StrictMode;
+            CommitToTimer = settings.CommitToTimer;
             LaunchAtStartup = settings.LaunchAtStartup;
             ShowNotifications = settings.ShowNotifications;
         }

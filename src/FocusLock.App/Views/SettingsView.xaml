@@ -109,7 +109,7 @@
                           AutomationProperties.Name="Also close game launchers" />
           </Grid>
 
-          <Grid Style="{StaticResource SettingRow}" Margin="0">
+          <Grid Style="{StaticResource SettingRow}">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
@@ -123,6 +123,22 @@
                           IsChecked="{Binding StrictMode}"
                           VerticalAlignment="Center"
                           AutomationProperties.Name="Strict mode" />
+          </Grid>
+
+          <Grid Style="{StaticResource SettingRow}" Margin="0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
+              <TextBlock Text="Commit to the timer" Style="{StaticResource BodyText}" />
+              <TextBlock Text="Sessions can't be ended early. They run until the time is up. Applies from the next session." Style="{StaticResource CaptionText}" TextWrapping="Wrap" />
+            </StackPanel>
+            <ToggleButton Grid.Column="1"
+                          Style="{StaticResource ToggleSwitch}"
+                          IsChecked="{Binding CommitToTimer}"
+                          VerticalAlignment="Center"
+                          AutomationProperties.Name="Commit to the timer" />
           </Grid>
         </StackPanel>
       </Border>

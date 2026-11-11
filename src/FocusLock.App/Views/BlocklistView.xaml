@@ -112,25 +112,6 @@
 
       <ItemsControl ItemsSource="{Binding Groups}" ItemTemplate="{StaticResource GroupCard}" IsTabStop="False" Margin="0,8,0,0" />
 
-      <!-- Launchers -->
-      <Border Style="{StaticResource Card}" Margin="0,0,0,16">
-        <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-          </Grid.ColumnDefinitions>
-          <StackPanel Margin="0,0,16,0">
-            <TextBlock Text="Also close game launchers" Style="{StaticResource SectionTitleText}" />
-            <TextBlock Text="{Binding LauncherNames}" Style="{StaticResource CaptionText}" Margin="0,4,0,0" />
-          </StackPanel>
-          <ToggleButton Grid.Column="1"
-                        Style="{StaticResource ToggleSwitch}"
-                        IsChecked="{Binding BlockLaunchers, Mode=TwoWay}"
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="Also close game launchers" />
-        </Grid>
-      </Border>
-
       <!-- Allowlist -->
       <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,16">
         <StackPanel>

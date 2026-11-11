@@ -154,6 +154,35 @@ public class InProcessSessionServiceTests
     }
 
     [Fact]
+    public async Task A_committed_session_cannot_be_ended_early_and_still_finishes_on_time()
+    {
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)) with { Committed = true }, Policy);
+        Assert.False(_service.State.CanEndEarly);
+        _clock.Advance(TimeSpan.FromMinutes(10));
+
+        await _service.EndEarlyAsync();
+
+        Assert.Empty(_summaries);
+        Assert.True(_service.State.IsRunning);
+        Assert.True(_blocking.IsActive);
+
+        _clock.Advance(TimeSpan.FromMinutes(15));
+        _timer.Tick();
+
+        var summary = Assert.Single(_summaries);
+        Assert.False(summary.EndedEarly);
+        Assert.Equal(TimeSpan.FromMinutes(25), summary.FocusedTime);
+    }
+
+    [Fact]
+    public async Task Sessions_can_be_ended_early_unless_committed()
+    {
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), Policy);
+
+        Assert.True(_service.State.CanEndEarly);
+    }
+
+    [Fact]
     public async Task Starting_while_running_is_rejected()
     {
         await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), Policy);

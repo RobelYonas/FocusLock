@@ -20,6 +20,8 @@ public class JsonSettingsStoreTests
         Assert.Equal([25, 50, 60], settings.PresetMinutes);
         Assert.True(settings.CloseAlreadyRunningGames);
         Assert.False(settings.StrictMode);
+        Assert.True(settings.BlockLaunchers);
+        Assert.False(settings.CommitToTimer);
         Assert.Empty(settings.CustomBlocklist);
     }
 
@@ -31,6 +33,7 @@ public class JsonSettingsStoreTests
             DefaultMinutes = 50,
             BlockLaunchers = true,
             StrictMode = true,
+            CommitToTimer = true,
             DisabledGameIds = ["steam:620"],
             CustomBlocklist = [new CustomEntry { Path = @"C:\Games\x.exe" }],
             Allowlist = [new CustomEntry { Path = @"C:\Tools", IsFolder = true }],
@@ -45,6 +48,7 @@ public class JsonSettingsStoreTests
         Assert.Equal(50, loaded.DefaultMinutes);
         Assert.True(loaded.BlockLaunchers);
         Assert.True(loaded.StrictMode);
+        Assert.True(loaded.CommitToTimer);
         Assert.Equal(["steam:620"], loaded.DisabledGameIds);
         Assert.Equal(@"C:\Games\x.exe", Assert.Single(loaded.CustomBlocklist).Path);
         Assert.True(Assert.Single(loaded.Allowlist).IsFolder);

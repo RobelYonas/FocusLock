@@ -67,9 +67,10 @@ public sealed partial class SessionController : ObservableObject
     public SessionPlan BuildPlan(TimeSpan focusLength)
     {
         var pomodoro = _settings.Current.Pomodoro;
-        return pomodoro.Enabled
+        var plan = pomodoro.Enabled
             ? new SessionPlan(focusLength, Pomodoro: true, TimeSpan.FromMinutes(pomodoro.BreakMinutes), pomodoro.Cycles)
             : SessionPlan.Single(focusLength);
+        return plan with { Committed = _settings.Current.CommitToTimer };
     }
 
     public async Task StartAsync(TimeSpan focusLength)

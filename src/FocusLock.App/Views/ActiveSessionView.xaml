@@ -28,7 +28,14 @@
               Command="{Binding EndEarlyCommand}"
               HorizontalAlignment="Center"
               Margin="0,28,0,0"
-              Visibility="{Binding IsGateOpen, Converter={StaticResource InvertedBoolToVisibility}}" />
+              Visibility="{Binding ShowEndEarlyButton, Converter={StaticResource BoolToVisibility}}" />
+
+      <TextBlock Text="You committed to this timer. It ends when the time is up."
+                 Style="{StaticResource SecondaryText}"
+                 HorizontalAlignment="Center"
+                 TextAlignment="Center"
+                 Margin="0,28,0,0"
+                 Visibility="{Binding CanEndEarly, Converter={StaticResource InvertedBoolToVisibility}}" />
 
       <!-- Strict mode: wait a minute or type the sentence -->
       <Border Style="{StaticResource Card}"

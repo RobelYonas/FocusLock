@@ -5,6 +5,9 @@ public sealed record SessionPlan(TimeSpan FocusLength, bool Pomodoro, TimeSpan B
 {
     public static SessionPlan Single(TimeSpan focusLength) => new(focusLength, Pomodoro: false, TimeSpan.Zero, Cycles: 1);
 
+    /// <summary>The user committed to the full timer: the session cannot be ended early. Fixed at start, so changing the setting mid-session has no effect.</summary>
+    public bool Committed { get; init; }
+
     /// <summary>Focus, break, focus, ... ending on the last focus block (no trailing break).</summary>
     public IReadOnlyList<SessionSegment> BuildSegments()
     {

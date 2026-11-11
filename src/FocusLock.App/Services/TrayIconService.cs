@@ -73,7 +73,7 @@ public sealed class TrayIconService(
 
     private void EndSession()
     {
-        if (!controller.IsRunning)
+        if (!controller.IsRunning || !controller.State.CanEndEarly)
         {
             return;
         }
@@ -91,6 +91,13 @@ public sealed class TrayIconService(
 
     private async Task QuitAsync()
     {
+        // Quitting ends the session, so a committed session keeps running and the window explains why.
+        if (controller.IsRunning && !controller.State.CanEndEarly)
+        {
+            ShowWindow();
+            return;
+        }
+
         if (controller.IsRunning && settings.Current.StrictMode)
         {
             ShowWindow();
@@ -163,7 +170,7 @@ public sealed class TrayIconService(
         _icon.Text = state.IsRunning ? $"FocusLock – {TimeText.Duration(state.RemainingInPhase)} left" : "FocusLock";
         if (_endItem is not null)
         {
-            _endItem.Enabled = state.IsRunning;
+            _endItem.Enabled = state.IsRunning && state.CanEndEarly;
         }
 
         // The session is over: bring the window back so the summary is seen.

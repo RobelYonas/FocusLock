@@ -21,6 +21,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
     private IDisposable? _ticks;
     private BlockPolicy _policy = BlockPolicy.Empty;
     private int _blockedAttempts;
+    private bool _committed;
 
     public InProcessSessionService(
         FocusSessionEngine engine,
@@ -62,6 +63,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
             _engine.Start(plan, now);
             _policy = policy;
             _blockedAttempts = 0;
+            _committed = plan.Committed;
             _blocking.LaunchBlocked += OnLaunchBlocked;
             state = Apply(_engine.Advance(now));
             _ticks = _timer.Start(TickInterval, Tick);
@@ -78,7 +80,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
         SessionSummary? summary = null;
         lock (_gate)
         {
-            if (_engine.IsRunning)
+            if (_engine.IsRunning && !_committed)
             {
                 summary = Finish(_clock.UtcNow, endedEarly: true);
             }
@@ -222,7 +224,8 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
             snapshot.RemainingInPhase,
             snapshot.RemainingTotal,
             snapshot.PhaseProgress,
-            _blockedAttempts);
+            _blockedAttempts,
+            CanEndEarly: !_committed);
         return State;
     }
 }

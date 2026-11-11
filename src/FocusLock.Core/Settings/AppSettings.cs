@@ -10,12 +10,15 @@ public sealed class AppSettings
     public PomodoroSettings Pomodoro { get; set; } = new();
 
     /// <summary>Also close the launchers themselves (Steam, Epic, ...).</summary>
-    public bool BlockLaunchers { get; set; }
+    public bool BlockLaunchers { get; set; } = true;
 
     /// <summary>Close games that are already open when a session starts.</summary>
     public bool CloseAlreadyRunningGames { get; set; } = true;
 
     public bool StrictMode { get; set; }
+
+    /// <summary>Sessions cannot be ended early at all; they run until the timer finishes.</summary>
+    public bool CommitToTimer { get; set; }
 
     public bool LaunchAtStartup { get; set; }
 

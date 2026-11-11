@@ -69,31 +69,6 @@ public sealed partial class BlocklistViewModel : ObservableObject
 
     public bool HasAllowed => Allowed.Count > 0;
 
-    public string LauncherNames => string.Join(", ", _catalog.Entries.Where(entry => entry.Game.Source == GameSource.Launcher).Select(entry => entry.Game.Name));
-
-    public bool BlockLaunchers
-    {
-        get => _settings.Current.BlockLaunchers;
-        set
-        {
-            if (value == BlockLaunchers)
-            {
-                return;
-            }
-
-            _applyingToggle = true;
-            try
-            {
-                _catalog.SetLaunchersEnabled(value);
-            }
-            finally
-            {
-                _applyingToggle = false;
-            }
-
-            OnPropertyChanged();
-        }
-    }
 
     public bool IsSessionRunning => _controller.IsRunning;
 
@@ -188,8 +163,6 @@ public sealed partial class BlocklistViewModel : ObservableObject
             group.Replace(items);
         }
 
-        OnPropertyChanged(nameof(LauncherNames));
-        OnPropertyChanged(nameof(BlockLaunchers));
         RebuildAllowed();
     }
 

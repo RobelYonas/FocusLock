@@ -51,6 +51,11 @@ public class GameCatalogTests
         var store = new FakeSettingsStore();
         var catalog = new GameCatalog([new StubDetector(GameSource.Launcher, Steam)], new SettingsService(store, NullLogger<SettingsService>.Instance), NullLogger<GameCatalog>.Instance);
         await catalog.RefreshAsync();
+        Assert.True(Entry(catalog, Steam.Id).IsEnabled); // launchers are blocked by default
+
+        catalog.SetLaunchersEnabled(false);
+
+        Assert.False(store.Settings.BlockLaunchers);
         Assert.False(Entry(catalog, Steam.Id).IsEnabled);
 
         catalog.SetLaunchersEnabled(true);
