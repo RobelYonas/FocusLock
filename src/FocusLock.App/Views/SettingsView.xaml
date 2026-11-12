@@ -116,7 +116,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
               <TextBlock Text="Commit to the timer" Style="{StaticResource BodyText}" />
-              <TextBlock Text="Sessions can't be ended early. They run until the time is up. Applies from the next session." Style="{StaticResource CaptionText}" TextWrapping="Wrap" />
+              <TextBlock Text="Sessions can't be ended early, and Task Manager is closed during focus. Applies from the next session." Style="{StaticResource CaptionText}" TextWrapping="Wrap" />
             </StackPanel>
             <ToggleButton Grid.Column="1"
                           Style="{StaticResource ToggleSwitch}"

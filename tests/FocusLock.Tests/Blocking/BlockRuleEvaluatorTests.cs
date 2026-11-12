@@ -76,6 +76,18 @@ public class BlockRuleEvaluatorTests
     }
 
     [Fact]
+    public void Blocks_task_manager_in_the_windows_folder_only_when_the_policy_asks()
+    {
+        var taskManager = new ProcessInfo(1, "Taskmgr.exe", @"C:\Windows\System32\Taskmgr.exe");
+
+        Assert.False(_evaluator.Evaluate(Policy, taskManager).ShouldBlock);
+
+        var decision = _evaluator.Evaluate(Policy with { BlockTaskManager = true }, taskManager);
+        Assert.True(decision.ShouldBlock);
+        Assert.Equal("Task Manager", decision.MatchedRule?.Name);
+    }
+
+    [Fact]
     public void Falls_back_to_known_executable_names_when_the_path_is_unreadable()
     {
         Assert.True(_evaluator.Evaluate(Policy, new ProcessInfo(1, "foolauncher.exe", null)).ShouldBlock);

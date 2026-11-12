@@ -39,7 +39,7 @@ public sealed class BlockPolicyBuilder(IFileSystem fileSystem, ILogger<BlockPoli
             .Select(game => new BlockRule(game.Name, game.Kind, game.Target))
             .ToList();
 
-        return new BlockPolicy(rules, allow);
+        return new BlockPolicy(rules, allow) { BlockTaskManager = settings.CommitToTimer };
     }
 
     /// <summary>Names of executables found a few levels deep in a game folder. Bounded so huge game folders stay cheap.</summary>

@@ -53,6 +53,13 @@ public class BlockPolicyBuilderTests
     }
 
     [Fact]
+    public void Task_manager_is_blocked_only_when_committed_to_the_timer()
+    {
+        Assert.False(Build([], new AppSettings()).BlockTaskManager);
+        Assert.True(Build([], new AppSettings { CommitToTimer = true }).BlockTaskManager);
+    }
+
+    [Fact]
     public void Allowlist_entries_become_allow_rules()
     {
         var settings = new AppSettings

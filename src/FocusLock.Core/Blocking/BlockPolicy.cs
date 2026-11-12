@@ -4,4 +4,7 @@ namespace FocusLock.Core.Blocking;
 public sealed record BlockPolicy(IReadOnlyList<BlockRule> Rules, IReadOnlyList<BlockRule> Allow)
 {
     public static BlockPolicy Empty { get; } = new([], []);
+
+    /// <summary>Also close Task Manager, so a committed session can't be ended by killing FocusLock from it.</summary>
+    public bool BlockTaskManager { get; init; }
 }

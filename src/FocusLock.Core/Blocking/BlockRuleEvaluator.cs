@@ -7,11 +7,20 @@ namespace FocusLock.Core.Blocking;
 /// <summary>Decides whether a process matches a policy. Never blocks FocusLock itself or anything in the Windows folder.</summary>
 public sealed class BlockRuleEvaluator(IAppEnvironment environment)
 {
+    private static readonly BlockRule TaskManager = new("Task Manager", MatchKind.ProcessName, "Taskmgr.exe");
+
     public BlockDecision Evaluate(BlockPolicy policy, ProcessInfo process)
     {
         if (process.Id == environment.ProcessId)
         {
             return BlockDecision.Allow;
+        }
+
+        // Checked before the Windows-folder exemption because Task Manager lives in System32.
+        // shortcut: an elevated Task Manager (the default on admin accounts) can't be closed by a non-elevated FocusLock; a real fix needs a SYSTEM service.
+        if (policy.BlockTaskManager && PathNormalizer.NameEquals(process.Name, TaskManager.Target))
+        {
+            return BlockDecision.Block(TaskManager);
         }
 
         if (process.ExecutablePath is not null && PathNormalizer.IsUnder(process.ExecutablePath, environment.WindowsDirectory))
