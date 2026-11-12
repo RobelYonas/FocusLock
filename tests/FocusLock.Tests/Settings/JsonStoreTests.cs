@@ -19,7 +19,6 @@ public class JsonSettingsStoreTests
         Assert.Equal(25, settings.DefaultMinutes);
         Assert.Equal([25, 50, 60], settings.PresetMinutes);
         Assert.True(settings.CloseAlreadyRunningGames);
-        Assert.False(settings.StrictMode);
         Assert.True(settings.BlockLaunchers);
         Assert.False(settings.CommitToTimer);
         Assert.Empty(settings.CustomBlocklist);
@@ -32,7 +31,6 @@ public class JsonSettingsStoreTests
         {
             DefaultMinutes = 50,
             BlockLaunchers = true,
-            StrictMode = true,
             CommitToTimer = true,
             DisabledGameIds = ["steam:620"],
             CustomBlocklist = [new CustomEntry { Path = @"C:\Games\x.exe" }],
@@ -47,7 +45,6 @@ public class JsonSettingsStoreTests
         Assert.False(_fileSystem.FileExists(@"C:\Users\test\AppData\Roaming\FocusLock\settings.json.tmp"));
         Assert.Equal(50, loaded.DefaultMinutes);
         Assert.True(loaded.BlockLaunchers);
-        Assert.True(loaded.StrictMode);
         Assert.True(loaded.CommitToTimer);
         Assert.Equal(["steam:620"], loaded.DisabledGameIds);
         Assert.Equal(@"C:\Games\x.exe", Assert.Single(loaded.CustomBlocklist).Path);
@@ -72,7 +69,7 @@ public class JsonSettingsStoreTests
     [Fact]
     public void Unknown_properties_are_ignored_and_missing_ones_keep_defaults()
     {
-        _fileSystem.AddFile(@"C:\Users\test\AppData\Roaming\FocusLock\settings.json", """{ "defaultMinutes": 60, "futureSetting": true }""");
+        _fileSystem.AddFile(@"C:\Users\test\AppData\Roaming\FocusLock\settings.json", """{ "defaultMinutes": 60, "futureSetting": true, "strictMode": true }""");
 
         var settings = Store().Load();
 

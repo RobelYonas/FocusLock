@@ -5,7 +5,6 @@ using FocusLock.App.Services;
 using FocusLock.Core.Abstractions;
 using FocusLock.Core.Common;
 using FocusLock.Core.Sessions;
-using FocusLock.Core.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace FocusLock.App.ViewModels;
@@ -13,23 +12,12 @@ namespace FocusLock.App.ViewModels;
 public sealed partial class ActiveSessionViewModel : ObservableObject
 {
     private readonly SessionController _controller;
-    private readonly SettingsService _settings;
     private readonly IClock _clock;
     private readonly ILogger<ActiveSessionViewModel> _logger;
-    private readonly StrictModeGate _gate = new();
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEndEarlyButton))]
-    private bool _isGateOpen;
-
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ConfirmEndEarlyCommand))]
-    private string _gateTypedText = string.Empty;
-
-    public ActiveSessionViewModel(SessionController controller, SettingsService settings, IClock clock, ILogger<ActiveSessionViewModel> logger)
+    public ActiveSessionViewModel(SessionController controller, IClock clock, ILogger<ActiveSessionViewModel> logger)
     {
         _controller = controller;
-        _settings = settings;
         _clock = clock;
         _logger = logger;
         controller.PropertyChanged += OnControllerPropertyChanged;
@@ -60,42 +48,8 @@ public sealed partial class ActiveSessionViewModel : ObservableObject
 
     public string EndsAtText => $"Ends around {(_clock.UtcNow + State.RemainingTotal).ToLocalTime():t}";
 
-    public string GateSentence => StrictModeGate.Sentence;
-
     /// <summary>False when the user committed to the timer; the session then runs to the end.</summary>
     public bool CanEndEarly => State.CanEndEarly;
-
-    public bool ShowEndEarlyButton => CanEndEarly && !IsGateOpen;
-
-    public string GateWaitText
-    {
-        get
-        {
-            var remaining = _gate.RemainingWait(_clock.UtcNow);
-            if (remaining == TimeSpan.Zero)
-            {
-                return "You can end the session now.";
-            }
-
-            var seconds = (int)Math.Ceiling(remaining.TotalSeconds);
-            return $"The button unlocks in {seconds} seconds — or type the sentence to end right away.";
-        }
-    }
-
-    /// <summary>Shows the strict-mode panel. Also called from the tray menu.</summary>
-    public void OpenGate()
-    {
-        if (!_controller.IsRunning || !CanEndEarly)
-        {
-            return;
-        }
-
-        _gate.Open(_clock.UtcNow);
-        GateTypedText = string.Empty;
-        IsGateOpen = true;
-        OnPropertyChanged(nameof(GateWaitText));
-        ConfirmEndEarlyCommand.NotifyCanExecuteChanged();
-    }
 
     [RelayCommand]
     private async Task EndEarlyAsync()
@@ -105,30 +59,6 @@ public sealed partial class ActiveSessionViewModel : ObservableObject
             return;
         }
 
-        if (_settings.Current.StrictMode)
-        {
-            OpenGate();
-        }
-        else
-        {
-            await EndNowAsync();
-        }
-    }
-
-    [RelayCommand(CanExecute = nameof(CanConfirmEndEarly))]
-    private async Task ConfirmEndEarlyAsync()
-    {
-        CloseGate();
-        await EndNowAsync();
-    }
-
-    [RelayCommand]
-    private void KeepFocusing() => CloseGate();
-
-    private bool CanConfirmEndEarly() => _gate.IsSatisfied(_clock.UtcNow, GateTypedText);
-
-    private async Task EndNowAsync()
-    {
         try
         {
             await _controller.EndEarlyAsync();
@@ -139,26 +69,11 @@ public sealed partial class ActiveSessionViewModel : ObservableObject
         }
     }
 
-    private void CloseGate()
-    {
-        _gate.Close();
-        IsGateOpen = false;
-        GateTypedText = string.Empty;
-    }
-
     private void OnControllerPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(SessionController.State))
+        if (e.PropertyName == nameof(SessionController.State))
         {
-            return;
+            OnPropertyChanged(string.Empty);
         }
-
-        if (!State.IsRunning && IsGateOpen)
-        {
-            CloseGate();
-        }
-
-        OnPropertyChanged(string.Empty);
-        ConfirmEndEarlyCommand.NotifyCanExecuteChanged();
     }
 }

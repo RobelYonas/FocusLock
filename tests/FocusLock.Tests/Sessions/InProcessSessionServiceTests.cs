@@ -175,7 +175,7 @@ public class InProcessSessionServiceTests
     }
 
     [Fact]
-    public async Task Sessions_can_be_ended_early_unless_committed()
+    public async Task A_normal_session_can_be_ended_early()
     {
         await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), Policy);
 

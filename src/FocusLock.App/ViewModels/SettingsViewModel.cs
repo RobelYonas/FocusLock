@@ -31,9 +31,6 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _blockLaunchers;
 
     [ObservableProperty]
-    private bool _strictMode;
-
-    [ObservableProperty]
     private bool _commitToTimer;
 
     [ObservableProperty]
@@ -68,8 +65,6 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnCyclesChanged(int value) => Save(settings => settings.Pomodoro.Cycles = value);
 
     partial void OnCloseAlreadyRunningChanged(bool value) => Save(settings => settings.CloseAlreadyRunningGames = value);
-
-    partial void OnStrictModeChanged(bool value) => Save(settings => settings.StrictMode = value);
 
     partial void OnCommitToTimerChanged(bool value) => Save(settings => settings.CommitToTimer = value);
 
@@ -131,7 +126,6 @@ public sealed partial class SettingsViewModel : ObservableObject
             Cycles = settings.Pomodoro.Cycles;
             CloseAlreadyRunning = settings.CloseAlreadyRunningGames;
             BlockLaunchers = settings.BlockLaunchers;
-            StrictMode = settings.StrictMode;
             CommitToTimer = settings.CommitToTimer;
             LaunchAtStartup = settings.LaunchAtStartup;
             ShowNotifications = settings.ShowNotifications;

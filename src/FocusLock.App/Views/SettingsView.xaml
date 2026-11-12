@@ -109,22 +109,6 @@
                           AutomationProperties.Name="Also close game launchers" />
           </Grid>
 
-          <Grid Style="{StaticResource SettingRow}">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="*" />
-              <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
-              <TextBlock Text="Strict mode" Style="{StaticResource BodyText}" />
-              <TextBlock Text="Ending a session early takes a 60-second wait or typing a sentence." Style="{StaticResource CaptionText}" />
-            </StackPanel>
-            <ToggleButton Grid.Column="1"
-                          Style="{StaticResource ToggleSwitch}"
-                          IsChecked="{Binding StrictMode}"
-                          VerticalAlignment="Center"
-                          AutomationProperties.Name="Strict mode" />
-          </Grid>
-
           <Grid Style="{StaticResource SettingRow}" Margin="0">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />

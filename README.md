@@ -12,8 +12,7 @@ and games are allowed during breaks. When the session ends you get a short summa
   the session. Hover the tray icon for the time left; double-click it to bring the window back.
 - Notifications are small in-app notes in the corner of the screen, so they still appear when Windows
   Do Not Disturb is on.
-- Strict mode (Settings) makes "End early" take a 60-second wait, or typing
-  "I choose to end this session early."
+- "Commit to the timer" (Settings) removes "End early": a session then runs until its time is up.
 - `FocusLock.exe --minimized` starts straight into the tray; the "start when I sign in" setting uses this.
 - Starting FocusLock a second time just brings the running window back.
 - Games are found automatically from Steam, Epic, GOG, the EA app, Ubisoft Connect and Battle.net. The list is

@@ -1,8 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
-using FocusLock.App.ViewModels;
 using FocusLock.Core.Common;
-using FocusLock.Core.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace FocusLock.App.Services;
@@ -13,9 +11,7 @@ namespace FocusLock.App.Services;
 /// </summary>
 public sealed class TrayIconService(
     SessionController controller,
-    SettingsService settings,
     ToastNotifier toasts,
-    ActiveSessionViewModel activeSession,
     ILogger<TrayIconService> logger) : IDisposable
 {
     private System.Windows.Forms.NotifyIcon? _icon;
@@ -78,15 +74,7 @@ public sealed class TrayIconService(
             return;
         }
 
-        if (settings.Current.StrictMode)
-        {
-            ShowWindow();
-            activeSession.OpenGate();
-        }
-        else
-        {
-            _ = controller.EndEarlyAsync();
-        }
+        _ = controller.EndEarlyAsync();
     }
 
     private async Task QuitAsync()
@@ -95,13 +83,6 @@ public sealed class TrayIconService(
         if (controller.IsRunning && !controller.State.CanEndEarly)
         {
             ShowWindow();
-            return;
-        }
-
-        if (controller.IsRunning && settings.Current.StrictMode)
-        {
-            ShowWindow();
-            activeSession.OpenGate();
             return;
         }
 

@@ -15,8 +15,6 @@ public sealed class AppSettings
     /// <summary>Close games that are already open when a session starts.</summary>
     public bool CloseAlreadyRunningGames { get; set; } = true;
 
-    public bool StrictMode { get; set; }
-
     /// <summary>Sessions cannot be ended early at all; they run until the timer finishes.</summary>
     public bool CommitToTimer { get; set; }
 
