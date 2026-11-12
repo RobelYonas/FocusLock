@@ -39,6 +39,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _showNotifications;
 
+    /// <summary>Index into the Theme picker; matches the <see cref="AppTheme"/> values.</summary>
+    [ObservableProperty]
+    private int _themeIndex;
+
     public SettingsViewModel(SettingsService settings, GameCatalog catalog, StartupRegistration startup)
     {
         _settings = settings;
@@ -69,6 +73,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnCommitToTimerChanged(bool value) => Save(settings => settings.CommitToTimer = value);
 
     partial void OnShowNotificationsChanged(bool value) => Save(settings => settings.ShowNotifications = value);
+
+    partial void OnThemeIndexChanged(int value)
+    {
+        var theme = (AppTheme)value;
+        Save(settings => settings.Theme = theme);
+        App.ApplyTheme(theme);
+    }
 
     partial void OnLaunchAtStartupChanged(bool value)
     {
@@ -129,6 +140,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             CommitToTimer = settings.CommitToTimer;
             LaunchAtStartup = settings.LaunchAtStartup;
             ShowNotifications = settings.ShowNotifications;
+            ThemeIndex = (int)settings.Theme;
         }
         finally
         {

@@ -5,6 +5,7 @@ using FocusLock.App.ViewModels;
 using FocusLock.App.Views;
 using FocusLock.Core;
 using FocusLock.Core.Logging;
+using FocusLock.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -40,6 +41,7 @@ public partial class App : Application
         _logger = _services.GetRequiredService<ILogger<App>>();
         _logger.LogInformation("FocusLock {Version} starting", typeof(App).Assembly.GetName().Version);
         DispatcherUnhandledException += OnUnhandledException;
+        ApplyTheme(_services.GetRequiredService<SettingsService>().Current.Theme);
 
         var shell = _services.GetRequiredService<ShellViewModel>();
         var window = _services.GetRequiredService<MainWindow>();
@@ -63,6 +65,14 @@ public partial class App : Application
 
         await shell.InitializeAsync();
     }
+
+    /// <summary>Switches every window between the light and dark Fluent theme.</summary>
+    public static void ApplyTheme(AppTheme theme) => Current.ThemeMode = theme switch
+    {
+        AppTheme.Light => ThemeMode.Light,
+        AppTheme.Dark => ThemeMode.Dark,
+        _ => ThemeMode.System,
+    };
 
     protected override void OnExit(ExitEventArgs e)
     {

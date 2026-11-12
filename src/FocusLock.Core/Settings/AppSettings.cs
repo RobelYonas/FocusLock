@@ -22,6 +22,8 @@ public sealed class AppSettings
 
     public bool ShowNotifications { get; set; } = true;
 
+    public AppTheme Theme { get; set; } = AppTheme.System;
+
     /// <summary>Detected games the user switched off, by <c>DetectedGame.Id</c>.</summary>
     public List<string> DisabledGameIds { get; set; } = [];
 
@@ -29,4 +31,12 @@ public sealed class AppSettings
 
     /// <summary>Programs that are never closed, even if a blocklist entry matches them.</summary>
     public List<CustomEntry> Allowlist { get; set; } = [];
+}
+
+/// <summary>Light or dark window colors. The numeric values are stored in settings.json, so do not reorder.</summary>
+public enum AppTheme
+{
+    System = 0,
+    Light = 1,
+    Dark = 2,
 }

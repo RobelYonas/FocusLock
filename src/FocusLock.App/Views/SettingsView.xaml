@@ -148,6 +148,27 @@
                           AutomationProperties.Name="Start FocusLock when I sign in" />
           </Grid>
 
+          <Grid Style="{StaticResource SettingRow}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
+              <TextBlock Text="Theme" Style="{StaticResource BodyText}" />
+              <TextBlock Text="Light or dark colors for FocusLock." Style="{StaticResource CaptionText}" />
+            </StackPanel>
+            <!-- Item order must match the AppTheme enum: System, Light, Dark. -->
+            <ComboBox Grid.Column="1"
+                      MinWidth="160"
+                      SelectedIndex="{Binding ThemeIndex}"
+                      VerticalAlignment="Center"
+                      AutomationProperties.Name="Theme">
+              <ComboBoxItem Content="Match Windows" />
+              <ComboBoxItem Content="Light" />
+              <ComboBoxItem Content="Dark" />
+            </ComboBox>
+          </Grid>
+
           <Grid Style="{StaticResource SettingRow}" Margin="0">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
