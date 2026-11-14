@@ -77,5 +77,25 @@ public class ElevatedSiteBlockBackendTests
         Assert.Equal(Encoding.Latin1.WebName, encoding.WebName);
     }
 
+    [Fact]
+    public void Backup_file_is_written_and_given_its_owner()
+    {
+        // Real file: setting the owner through the write handle was refused by Windows and left an empty backup.
+        var path = Path.Combine(Path.GetTempPath(), $"focuslock-test-{Guid.NewGuid():N}.json");
+        var me = System.Security.Principal.WindowsIdentity.GetCurrent().User!;
+        try
+        {
+            WindowsSiteBlockSystem.WriteOwnedFile(path, "{}"u8.ToArray(), me);
+
+            Assert.Equal("{}", File.ReadAllText(path));
+            Assert.Throws<IOException>(() => WindowsSiteBlockSystem.WriteOwnedFile(path, "x"u8.ToArray(), me));
+            Assert.Equal("{}", File.ReadAllText(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     private ElevatedSiteBlockBackend Backend() => new(_logger, _environment, _files);
 }

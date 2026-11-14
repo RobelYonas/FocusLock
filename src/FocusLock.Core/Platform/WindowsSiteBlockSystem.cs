@@ -89,14 +89,31 @@ internal sealed class WindowsSiteBlockSystem : ISiteBlockSystem
     {
         EnsureBackupFolder();
 
-        // CreateNew never writes through an existing file or link.
-        using var stream = new FileStream(BackupPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-
         // ReadBackup trusts only admin-owned files; don't depend on the "default owner" group policy.
-        var owner = new FileSecurity();
-        owner.SetOwner(Administrators);
-        stream.SetAccessControl(owner);
-        stream.Write(new UTF8Encoding(false).GetBytes(json));
+        WriteOwnedFile(BackupPath, new UTF8Encoding(false).GetBytes(json), Administrators);
+    }
+
+    /// <summary>Creates a new file with <paramref name="content"/> and makes <paramref name="owner"/> its owner; leaves no file behind on failure.</summary>
+    internal static void WriteOwnedFile(string path, byte[] content, SecurityIdentifier owner)
+    {
+        // CreateNew never writes through an existing file or link.
+        using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        {
+            stream.Write(content);
+        }
+
+        try
+        {
+            // By path, after closing: a write-only handle has no right to change the owner.
+            var security = new FileSecurity();
+            security.SetOwner(owner);
+            new FileInfo(path).SetAccessControl(security);
+        }
+        catch
+        {
+            File.Delete(path);
+            throw;
+        }
     }
 
     public void DeleteBackup() => File.Delete(BackupPath);
