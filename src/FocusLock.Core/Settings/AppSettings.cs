@@ -31,6 +31,15 @@ public sealed class AppSettings
 
     /// <summary>Programs that are never closed, even if a blocklist entry matches them.</summary>
     public List<CustomEntry> Allowlist { get; set; } = [];
+
+    /// <summary>Built-in sites blocked during focus, by <c>SitePreset.Id</c>.</summary>
+    public List<string> BlockedSitePresetIds { get; set; } = [];
+
+    /// <summary>Domains the user added, normalized by <c>DomainName.TryNormalize</c> (no <c>www.</c>).</summary>
+    public List<string> CustomBlockedDomains { get; set; } = [];
+
+    /// <summary>Close web browsers when a session starts, so tabs that are already open are blocked too.</summary>
+    public bool CloseBrowsersOnSessionStart { get; set; }
 }
 
 /// <summary>Light or dark window colors. The numeric values are stored in settings.json, so do not reorder.</summary>

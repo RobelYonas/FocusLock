@@ -7,4 +7,7 @@ public sealed record BlockPolicy(IReadOnlyList<BlockRule> Rules, IReadOnlyList<B
 
     /// <summary>Also close Task Manager, so a committed session can't be ended by killing FocusLock from it.</summary>
     public bool BlockTaskManager { get; init; }
+
+    /// <summary>Every domain to block during focus, already expanded (presets plus custom domains with variants).</summary>
+    public IReadOnlyList<string> BlockedDomains { get; init; } = [];
 }

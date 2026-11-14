@@ -47,6 +47,10 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
 
     public event EventHandler<SessionSummary>? Completed;
 
+#pragma warning disable CS0067 // Contract stub: Task C raises it.
+    public event EventHandler<WebsiteNotice>? WebsiteNotice;
+#pragma warning restore CS0067
+
     public SessionState State { get; private set; } = SessionState.Idle;
 
     public Task StartAsync(SessionPlan plan, BlockPolicy policy, CancellationToken cancellationToken = default)

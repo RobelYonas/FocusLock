@@ -20,4 +20,7 @@ public interface ISessionService
     event EventHandler<BlockedLaunchNotice>? LaunchBlocked;
 
     event EventHandler<SessionSummary>? Completed;
+
+    /// <summary>Website-blocking messages for the user. Handlers run on a background thread.</summary>
+    event EventHandler<WebsiteNotice>? WebsiteNotice;
 }
