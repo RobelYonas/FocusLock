@@ -21,6 +21,13 @@ internal static class NativeMethods
         return QueryFullProcessImageNameW(handle, 0, buffer, ref size) ? new string(buffer, 0, (int)size) : null;
     }
 
+    /// <summary>Empties the DNS client cache, like <c>ipconfig /flushdns</c>. Needs elevation.</summary>
+    public static bool FlushDnsCache() => DnsFlushResolverCache();
+
+    [DllImport("dnsapi.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DnsFlushResolverCache();
+
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern SafeProcessHandle OpenProcess(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, uint processId);
 
