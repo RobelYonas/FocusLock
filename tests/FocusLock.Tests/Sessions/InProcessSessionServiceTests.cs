@@ -325,7 +325,7 @@ public class InProcessSessionServiceTests
     }
 
     [Fact]
-    public async Task A_declined_permission_prompt_is_announced_once_per_session()
+    public async Task A_declined_permission_prompt_is_not_asked_again_this_session()
     {
         _siteBackend.ApplyResult = SiteBlockResult.UserCancelled;
         await _service.StartAsync(Pomodoro, SitePolicy);
@@ -333,12 +333,32 @@ public class InProcessSessionServiceTests
 
         _clock.Advance(TimeSpan.FromMinutes(25).Add(TimeSpan.FromSeconds(1)));
         _timer.Tick();
+        await _websites.WhenIdleAsync();
         _clock.Advance(TimeSpan.FromMinutes(5));
         _timer.Tick();
         await _websites.WhenIdleAsync();
 
-        Assert.Equal(["apply:youtube.com", "apply:youtube.com"], _siteBackend.Calls);
+        Assert.Equal(SessionPhase.Focus, _service.State.Phase);
+        Assert.Equal(["apply:youtube.com"], _siteBackend.Calls);
         Assert.Equal([WebsiteNoticeKind.PermissionDeclined], NoticeKinds);
+    }
+
+    [Fact]
+    public async Task A_failed_block_is_tried_again_next_focus_block_and_announced_once()
+    {
+        _siteBackend.ApplyResult = SiteBlockResult.Failed;
+        await _service.StartAsync(Pomodoro, SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        _clock.Advance(TimeSpan.FromMinutes(25).Add(TimeSpan.FromSeconds(1)));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+        _clock.Advance(TimeSpan.FromMinutes(5));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal(2, _siteBackend.Calls.Count(call => call.StartsWith("apply:", StringComparison.Ordinal)));
+        Assert.Equal([WebsiteNoticeKind.Failed], NoticeKinds);
     }
 
     [Fact]

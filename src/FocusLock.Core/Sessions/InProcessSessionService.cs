@@ -26,7 +26,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
     private int _blockedAttempts;
     private bool _committed;
     private bool _noticedBlocked;
-    private bool _noticedDeclined;
+    private bool _noticedDeclined; // Also stops further website activation this session.
     private bool _noticedFailed;
     private IReadOnlyList<string> _openBrowsers = [];
 
@@ -139,6 +139,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
         SessionSummary? summary = null;
         var activateBlocking = false;
         var deactivateBlocking = false;
+        var websitesDeclined = false;
 
         lock (_gate)
         {
@@ -159,6 +160,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
                 {
                     activateBlocking = snapshot.Phase == SessionPhase.Focus;
                     deactivateBlocking = !activateBlocking;
+                    websitesDeclined = _noticedDeclined;
                 }
 
                 state = Apply(snapshot);
@@ -169,7 +171,12 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
         {
             _logger.LogInformation("Focus time again");
             _blocking.Activate(_policy, _settings.Current.CloseAlreadyRunningGames);
-            _websites.Activate(_policy.BlockedDomains);
+
+            // The user declined the permission prompt this session; asking again every focus block would nag.
+            if (!websitesDeclined)
+            {
+                _websites.Activate(_policy.BlockedDomains);
+            }
         }
         else if (deactivateBlocking)
         {
