@@ -18,6 +18,33 @@ and games are allowed during breaks. When the session ends you get a short summa
 - Games are found automatically from Steam, Epic, GOG, the EA app, Ubisoft Connect and Battle.net. The list is
   refreshed every time a session starts, so a game installed a minute ago is still blocked.
 
+## Blocking websites
+
+Optionally, FocusLock can also block websites during a focus session. Switch on any of the built-in sites on the
+Blocklist page: Instagram, YouTube, TikTok, Reddit, X (Twitter), Facebook, Snapchat, Twitch, Netflix and Discord.
+
+- Blocking works by writing the chosen domains to the Windows hosts file, between `# FocusLock begin` and
+  `# FocusLock end` lines. FocusLock also sets a browser policy so Chrome, Edge and Firefox do not skip the hosts
+  file through DNS-over-HTTPS, and it flushes the DNS cache.
+- Each change needs administrator rights, so Windows shows its permission (UAC) prompt. If you decline it, the
+  session still runs and games are still blocked. Only website blocking is skipped.
+- During Pomodoro breaks the websites are open again. Blocking comes back for the next focus block.
+- The hosts section is removed when the session ends. If FocusLock crashed during a session, it removes the
+  section the next time it starts.
+- Tabs that were already open before the session can keep working until the browser restarts. To avoid this,
+  turn on "Close browsers when a session starts" in Settings. It is off by default. FocusLock also shows a
+  reminder notification when a session starts.
+- Chrome or Edge may show "Managed by your organization" during a session. This comes from the DNS policy
+  described above and goes away when the session ends.
+
+To remove the blocking by hand, open `C:\Windows\System32\drivers\etc\hosts` as administrator, delete the lines
+from `# FocusLock begin` to `# FocusLock end` (both included), save the file, and then run this in a command
+prompt:
+
+```
+ipconfig /flushdns
+```
+
 ## Requirements
 
 - Windows 10 or 11, x64.
