@@ -5,6 +5,7 @@ using FocusLock.App.ViewModels;
 using FocusLock.App.Views;
 using FocusLock.Core;
 using FocusLock.Core.Logging;
+using FocusLock.Core.Platform;
 using FocusLock.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,12 @@ public partial class App : Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
+        // Elevated website-block helper: do the job and exit before any window, mutex or service exists.
+        if (SiteBlockHelper.IsHelperInvocation(e.Args))
+        {
+            Environment.Exit(SiteBlockHelper.Run(e.Args));
+        }
+
         base.OnStartup(e);
 
         // Only one FocusLock at a time. A second start just brings the first one's window back.
