@@ -4,6 +4,7 @@ using FocusLock.Core.Blocking;
 using FocusLock.Core.Detection;
 using FocusLock.Core.Sessions;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Websites;
 using Microsoft.Extensions.Logging;
 
 namespace FocusLock.App.Services;
@@ -20,6 +21,7 @@ public sealed partial class SessionController : ObservableObject
     private readonly SettingsService _settings;
     private readonly IStatsStore _stats;
     private readonly IClock _clock;
+    private readonly WebsiteBlocker _websites;
     private readonly ILogger<SessionController> _logger;
 
     [ObservableProperty]
@@ -36,6 +38,7 @@ public sealed partial class SessionController : ObservableObject
         SettingsService settings,
         IStatsStore stats,
         IClock clock,
+        WebsiteBlocker websites,
         IUiDispatcher dispatcher,
         ILogger<SessionController> logger)
     {
@@ -45,10 +48,12 @@ public sealed partial class SessionController : ObservableObject
         _settings = settings;
         _stats = stats;
         _clock = clock;
+        _websites = websites;
         _logger = logger;
 
         sessions.StateChanged += (_, state) => dispatcher.Post(() => ApplyState(state));
         sessions.LaunchBlocked += (_, notice) => dispatcher.Post(() => LaunchBlocked?.Invoke(this, notice));
+        sessions.WebsiteNotice += (_, notice) => dispatcher.Post(() => WebsiteNotice?.Invoke(this, notice));
         sessions.Completed += (_, summary) => dispatcher.Post(() =>
         {
             LastSummary = summary;
@@ -57,6 +62,8 @@ public sealed partial class SessionController : ObservableObject
     }
 
     public event EventHandler<BlockedLaunchNotice>? LaunchBlocked;
+
+    public event EventHandler<WebsiteNotice>? WebsiteNotice;
 
     public event EventHandler<SessionPhase>? PhaseChanged;
 
@@ -84,6 +91,19 @@ public sealed partial class SessionController : ObservableObject
             await _sessions.StartAsync(plan, policy).ConfigureAwait(false);
         });
         _logger.LogInformation("Session of {Length} started from the UI", focusLength);
+    }
+
+    /// <summary>Removes a website block left behind by a crash. Safe to call at startup.</summary>
+    public async Task RecoverWebsitesAsync()
+    {
+        try
+        {
+            await Task.Run(() => _websites.RecoverAsync()).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Recovering the website block failed");
+        }
     }
 
     public Task EndEarlyAsync() => Task.Run(() => _sessions.EndEarlyAsync());
