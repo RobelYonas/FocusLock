@@ -17,44 +17,81 @@ public static class DomainName
     public static bool TryNormalize(string? input, [NotNullWhen(true)] out string? domain)
     {
         domain = null;
-        var s = input?.Trim();
-        if (string.IsNullOrEmpty(s) || s.Any(c => char.IsWhiteSpace(c) || c is '#' or '*' or '@' or '\\'))
-            return false;
-
-        var scheme = s.IndexOf("://", StringComparison.Ordinal);
-        if (scheme >= 0) s = s[(scheme + 3)..];
-        var end = s.IndexOfAny(['/', '?']);
-        if (end >= 0) s = s[..end];
-
-        if (s.StartsWith('[')) return false; // bracketed IPv6
-        var colon = s.IndexOf(':');
-        if (colon >= 0)
+        var host = input?.Trim();
+        if (string.IsNullOrEmpty(host))
         {
-            var port = s[(colon + 1)..];
-            if (port.Length == 0 || !port.All(char.IsAsciiDigit)) return false; // also rejects bare IPv6
-            s = s[..colon];
+            return false;
         }
 
-        if (s.EndsWith('.')) s = s[..^1];
-        s = s.ToLowerInvariant();
-        if (s.Any(c => c > 127))
+        if (host.Any(character => char.IsWhiteSpace(character) || character is '#' or '*' or '@' or '\\'))
         {
-            try { s = new IdnMapping().GetAscii(s); }
-            catch (ArgumentException) { return false; }
-            s = s.ToLowerInvariant();
+            return false;
+        }
+
+        var schemeIndex = host.IndexOf("://", StringComparison.Ordinal);
+        if (schemeIndex >= 0)
+        {
+            host = host[(schemeIndex + 3)..];
+        }
+
+        var pathIndex = host.IndexOfAny(['/', '?']);
+        if (pathIndex >= 0)
+        {
+            host = host[..pathIndex];
+        }
+
+        if (host.StartsWith('['))
+        {
+            return false; // bracketed IPv6
+        }
+
+        var colonIndex = host.IndexOf(':');
+        if (colonIndex >= 0)
+        {
+            var port = host[(colonIndex + 1)..];
+            if (port.Length == 0 || !port.All(char.IsAsciiDigit))
+            {
+                return false; // also rejects bare IPv6
+            }
+
+            host = host[..colonIndex];
+        }
+
+        if (host.EndsWith('.'))
+        {
+            host = host[..^1];
+        }
+
+        host = host.ToLowerInvariant();
+        if (host.Any(character => character > 127))
+        {
+            try
+            {
+                host = new IdnMapping().GetAscii(host);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+
+            host = host.ToLowerInvariant();
         }
 
         foreach (var prefix in new[] { "www.", "m." })
         {
-            if (s.StartsWith(prefix, StringComparison.Ordinal) && s.IndexOf('.', prefix.Length) > 0)
+            if (host.StartsWith(prefix, StringComparison.Ordinal) && host.IndexOf('.', prefix.Length) > 0)
             {
-                s = s[prefix.Length..];
+                host = host[prefix.Length..];
                 break;
             }
         }
 
-        if (!IsValid(s)) return false;
-        domain = s;
+        if (!IsValid(host))
+        {
+            return false;
+        }
+
+        domain = host;
         return true;
     }
 
@@ -64,15 +101,35 @@ public static class DomainName
     /// </summary>
     public static bool IsValid(string? value)
     {
-        if (string.IsNullOrEmpty(value) || value.Length > 253) return false;
-        var labels = value.Split('.');
-        if (labels.Length < 2) return false;
-        foreach (var l in labels)
+        if (string.IsNullOrEmpty(value) || value.Length > 253)
         {
-            if (l.Length is 0 or > 63 || l[0] == '-' || l[^1] == '-') return false;
-            if (!l.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')) return false;
+            return false;
         }
-        if (labels[^1].All(char.IsAsciiDigit)) return false; // numeric TLD, covers IPv4
+
+        var labels = value.Split('.');
+        if (labels.Length < 2)
+        {
+            return false;
+        }
+
+        foreach (var label in labels)
+        {
+            if (label.Length is 0 or > 63 || label[0] == '-' || label[^1] == '-')
+            {
+                return false;
+            }
+
+            if (!label.All(character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-'))
+            {
+                return false;
+            }
+        }
+
+        if (labels[^1].All(char.IsAsciiDigit))
+        {
+            return false; // numeric TLD, covers IPv4
+        }
+
         return labels[^1] != "localhost";
     }
 
@@ -81,12 +138,19 @@ public static class DomainName
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<string>();
-        foreach (var d in domains)
+        foreach (var domain in domains)
         {
-            var hasPrefix = d.StartsWith("www.", StringComparison.OrdinalIgnoreCase) || d.StartsWith("m.", StringComparison.OrdinalIgnoreCase);
-            foreach (var v in hasPrefix ? [d] : new[] { d, "www." + d, "m." + d })
-                if (seen.Add(v)) result.Add(v);
+            var hasPrefix = domain.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
+                || domain.StartsWith("m.", StringComparison.OrdinalIgnoreCase);
+            foreach (var variant in hasPrefix ? [domain] : new[] { domain, "www." + domain, "m." + domain })
+            {
+                if (seen.Add(variant))
+                {
+                    result.Add(variant);
+                }
+            }
         }
+
         return result;
     }
 }

@@ -6,21 +6,20 @@ public static class HostsFileEditor
     public const string BeginMarker = "# FocusLock begin";
     public const string EndMarker = "# FocusLock end";
 
-    private sealed class Line(string text, string eol)
-    {
-        public string Text { get; } = text;
-        public string Eol { get; set; } = eol;
-    }
-
     /// <summary>
     /// Returns <paramref name="hostsText"/> with exactly one FocusLock section holding a <c>0.0.0.0 domain</c> line
     /// per domain. Throws <see cref="ArgumentException"/> when any domain fails <see cref="DomainName.IsValid"/>.
     /// </summary>
     public static string Apply(string hostsText, IReadOnlyList<string> domains)
     {
-        foreach (var d in domains)
-            if (!DomainName.IsValid(d))
-                throw new ArgumentException($"'{d}' is not a valid domain name.", nameof(domains));
+        foreach (var domain in domains)
+        {
+            if (!DomainName.IsValid(domain))
+            {
+                throw new ArgumentException($"'{domain}' is not a valid domain name.", nameof(domains));
+            }
+        }
+
         return Rewrite(hostsText, domains.Distinct(StringComparer.Ordinal).ToList());
     }
 
@@ -32,13 +31,14 @@ public static class HostsFileEditor
     public static string Remove(string hostsText) => Rewrite(hostsText, null);
 
     /// <summary>True when the text contains a FocusLock begin marker.</summary>
-    public static bool ContainsBlock(string hostsText) => Split(hostsText).Any(l => IsMarker(l, BeginMarker));
+    public static bool ContainsBlock(string hostsText) => Split(hostsText).Any(line => IsMarker(line, BeginMarker));
 
-    private static bool IsMarker(Line l, string marker) => l.Text.Trim().Equals(marker, StringComparison.OrdinalIgnoreCase);
+    private static bool IsMarker(Line line, string marker) =>
+        line.Text.Trim().Equals(marker, StringComparison.OrdinalIgnoreCase);
 
     // Exactly what Apply writes; anything else is the user's.
-    private static bool IsOwnLine(Line l) =>
-        l.Text.StartsWith("0.0.0.0 ", StringComparison.Ordinal) && DomainName.IsValid(l.Text[8..]);
+    private static bool IsOwnLine(Line line) =>
+        line.Text.StartsWith("0.0.0.0 ", StringComparison.Ordinal) && DomainName.IsValid(line.Text[8..]);
 
     private static List<Line> Split(string text)
     {
@@ -46,57 +46,100 @@ public static class HostsFileEditor
         var start = 0;
         while (start < text.Length)
         {
-            var nl = text.IndexOf('\n', start);
-            if (nl < 0) { lines.Add(new Line(text[start..], "")); break; }
-            var crlf = nl > start && text[nl - 1] == '\r';
-            lines.Add(new Line(text[start..(crlf ? nl - 1 : nl)], crlf ? "\r\n" : "\n"));
-            start = nl + 1;
+            var newline = text.IndexOf('\n', start);
+            if (newline < 0)
+            {
+                lines.Add(new Line(text[start..], ""));
+                break;
+            }
+
+            var isCrlf = newline > start && text[newline - 1] == '\r';
+            lines.Add(new Line(text[start..(isCrlf ? newline - 1 : newline)], isCrlf ? "\r\n" : "\n"));
+            start = newline + 1;
         }
+
         return lines;
     }
 
     private static string Rewrite(string text, List<string>? domains)
     {
         var lines = Split(text);
-        var crlf = lines.Count(l => l.Eol == "\r\n");
-        var eol = crlf >= lines.Count(l => l.Eol == "\n") ? "\r\n" : "\n";
+        var crlfCount = lines.Count(line => line.Eol == "\r\n");
+        var eol = crlfCount >= lines.Count(line => line.Eol == "\n") ? "\r\n" : "\n";
         var endsWithoutNewline = lines.Count > 0 && lines[^1].Eol == "";
 
         var output = new List<Line>();
         var insertAt = -1;
-        for (var i = 0; i < lines.Count; i++)
+        for (var index = 0; index < lines.Count; index++)
         {
-            var line = lines[i];
-            if (IsMarker(line, EndMarker)) continue; // stray end marker: drop only this line
-            if (!IsMarker(line, BeginMarker)) { output.Add(line); continue; }
+            var line = lines[index];
+            if (IsMarker(line, EndMarker))
+            {
+                continue; // stray end marker: drop only this line
+            }
+
+            if (!IsMarker(line, BeginMarker))
+            {
+                output.Add(line);
+                continue;
+            }
 
             // A complete section runs to the next end marker, unless another begin marker comes first.
             // A broken section (no end marker) drops only the begin line and the contiguous lines that are
             // exactly "0.0.0.0 <valid domain>"; cutting to end of file could delete the user's own entries.
-            var j = i + 1;
-            while (j < lines.Count && !IsMarker(lines[j], EndMarker) && !IsMarker(lines[j], BeginMarker)) j++;
-            if (j < lines.Count && IsMarker(lines[j], EndMarker)) i = j;
+            var next = index + 1;
+            while (next < lines.Count && !IsMarker(lines[next], EndMarker) && !IsMarker(lines[next], BeginMarker))
+            {
+                next++;
+            }
+
+            if (next < lines.Count && IsMarker(lines[next], EndMarker))
+            {
+                index = next;
+            }
             else
             {
-                while (i + 1 < lines.Count && IsOwnLine(lines[i + 1])) i++;
+                while (index + 1 < lines.Count && IsOwnLine(lines[index + 1]))
+                {
+                    index++;
+                }
             }
-            if (insertAt < 0) insertAt = output.Count;
+
+            if (insertAt < 0)
+            {
+                insertAt = output.Count;
+            }
         }
 
         if (domains is not null)
         {
             var block = new List<Line> { new(BeginMarker, eol) };
-            block.AddRange(domains!.Select(d => new Line("0.0.0.0 " + d, eol)));
+            block.AddRange(domains.Select(domain => new Line("0.0.0.0 " + domain, eol)));
             block.Add(new Line(EndMarker, eol));
             if (insertAt < 0)
             {
                 insertAt = output.Count;
-                if (insertAt > 0 && output[^1].Eol == "") output[^1].Eol = eol;
+                if (insertAt > 0 && output[^1].Eol == "")
+                {
+                    output[^1].Eol = eol;
+                }
             }
+
             output.InsertRange(insertAt, block);
         }
 
-        if (endsWithoutNewline && output.Count > 0) output[^1].Eol = "";
-        return string.Concat(output.Select(l => l.Text + l.Eol));
+        if (endsWithoutNewline && output.Count > 0)
+        {
+            output[^1].Eol = "";
+        }
+
+        return string.Concat(output.Select(line => line.Text + line.Eol));
+    }
+
+    private sealed class Line(string text, string eol)
+    {
+        public string Text { get; } = text;
+
+        public string Eol { get; set; } = eol;
     }
 }
