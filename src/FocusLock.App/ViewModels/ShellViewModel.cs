@@ -58,6 +58,7 @@ public sealed partial class ShellViewModel : ObservableObject
 
     public async Task InitializeAsync()
     {
+        _ = _controller.RecoverWebsitesAsync();
         try
         {
             await Task.Run(() => _catalog.RefreshAsync());

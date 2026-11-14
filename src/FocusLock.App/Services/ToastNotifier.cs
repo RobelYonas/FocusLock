@@ -27,6 +27,7 @@ public sealed class ToastNotifier
 
         // The controller re-raises Core's events on the UI thread already.
         controller.LaunchBlocked += (_, notice) => dispatcher.Post(() => OnLaunchBlocked(notice));
+        controller.WebsiteNotice += (_, notice) => dispatcher.Post(() => OnWebsiteNotice(notice));
         controller.PhaseChanged += (_, phase) => dispatcher.Post(() => OnPhaseChanged(controller, phase));
         controller.Completed += (_, summary) => dispatcher.Post(() => OnCompleted(summary));
     }
@@ -36,11 +37,15 @@ public sealed class ToastNotifier
 
     public void Show(string title, string body)
     {
-        if (!_settings.Current.ShowNotifications)
+        if (_settings.Current.ShowNotifications)
         {
-            return;
+            ShowAlways(title, body);
         }
+    }
 
+    /// <summary>For problems the person must know about, even with notifications off.</summary>
+    private void ShowAlways(string title, string body)
+    {
         _window ??= CreateWindow();
         _window.SetMessage(title, body);
         _window.Show();
@@ -57,6 +62,28 @@ public sealed class ToastNotifier
         else if (notice.Result == TerminateResult.AccessDenied)
         {
             Show($"{notice.GameName} couldn't be closed", "You may need to close it yourself this time.");
+        }
+    }
+
+    private void OnWebsiteNotice(WebsiteNotice notice)
+    {
+        switch (notice.Kind)
+        {
+            case WebsiteNoticeKind.Blocked:
+                Show("Websites blocked", "Blocked sites won't open until your focus time ends.");
+                break;
+            case WebsiteNoticeKind.RestartBrowsers:
+                Show("Restart your browser", $"Restart {WebsiteText.JoinNames(notice.Browsers)} so tabs that are already open are blocked too.");
+                break;
+            case WebsiteNoticeKind.PermissionDeclined:
+                ShowAlways("Websites aren't blocked this time", "The permission prompt was declined. Games are still blocked.");
+                break;
+            case WebsiteNoticeKind.Failed:
+                ShowAlways("Websites aren't blocked this time", "Something went wrong. Games are still blocked.");
+                break;
+            case WebsiteNoticeKind.StillBlocked:
+                ShowAlways("Websites are still blocked", "FocusLock couldn't unblock them. It will try again the next time it starts.");
+                break;
         }
     }
 

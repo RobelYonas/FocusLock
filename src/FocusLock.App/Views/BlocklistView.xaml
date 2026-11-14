@@ -61,6 +61,46 @@
       </Border>
     </DataTemplate>
 
+    <!-- One built-in site -->
+    <DataTemplate x:Key="SitePresetRow" DataType="{x:Type vm:SitePresetItemViewModel}">
+      <Border Style="{StaticResource ListRow}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+            <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+            <TextBlock Text="{Binding Detail}" Style="{StaticResource CaptionText}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+          </StackPanel>
+          <ToggleButton Grid.Column="1"
+                        Style="{StaticResource ToggleSwitch}"
+                        IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="{Binding ToggleAccessibleName}" />
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- One website added by the person -->
+    <DataTemplate x:Key="CustomSiteRow" DataType="{x:Type vm:CustomSiteItemViewModel}">
+      <Border Style="{StaticResource ListRow}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Text="{Binding Domain}" Style="{StaticResource BodyText}" VerticalAlignment="Center" Margin="0,0,16,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+          <Button Grid.Column="1"
+                  Content="Remove"
+                  Style="{StaticResource SubtleButton}"
+                  Command="{Binding RemoveCommand}"
+                  VerticalAlignment="Center"
+                  AutomationProperties.Name="{Binding RemoveAccessibleName}" />
+        </Grid>
+      </Border>
+    </DataTemplate>
+
     <!-- One allowed program -->
     <DataTemplate x:Key="AllowRow" DataType="{x:Type vm:AllowItemViewModel}">
       <Border Style="{StaticResource ListRow}">
@@ -111,6 +151,41 @@
                  Visibility="{Binding IsRefreshing, Converter={StaticResource BoolToVisibility}}" />
 
       <ItemsControl ItemsSource="{Binding Groups}" ItemTemplate="{StaticResource GroupCard}" IsTabStop="False" Margin="0,8,0,0" />
+
+      <!-- Websites -->
+      <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,16" IsEnabled="{Binding CanEditSites}">
+        <StackPanel>
+          <StackPanel Margin="16,14,16,12">
+            <TextBlock Text="Websites" Style="{StaticResource SectionTitleText}" />
+            <TextBlock Text="These sites won't open in any browser while a focus session runs." Style="{StaticResource CaptionText}" Margin="0,4,0,0" />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding SitePresets}" ItemTemplate="{StaticResource SitePresetRow}" IsTabStop="False" />
+          <Grid Margin="16,14,16,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding NewSite, UpdateSourceTrigger=PropertyChanged}"
+                     Margin="0,0,8,0"
+                     VerticalAlignment="Center"
+                     AutomationProperties.Name="Add a website">
+              <TextBox.InputBindings>
+                <KeyBinding Key="Enter" Command="{Binding AddSiteCommand}" />
+              </TextBox.InputBindings>
+            </TextBox>
+            <Button Grid.Column="1" Content="Add" Command="{Binding AddSiteCommand}" AutomationProperties.Name="Add website" />
+          </Grid>
+          <TextBlock Text="{Binding SiteMessage}"
+                     Style="{StaticResource CaptionText}"
+                     Margin="16,6,16,0"
+                     Visibility="{Binding HasSiteMessage, Converter={StaticResource BoolToVisibility}}" />
+          <TextBlock Text="No websites added yet. Type an address like example.com."
+                     Style="{StaticResource SecondaryText}"
+                     Margin="16,12,16,16"
+                     Visibility="{Binding HasCustomSites, Converter={StaticResource InvertedBoolToVisibility}}" />
+          <ItemsControl ItemsSource="{Binding CustomSites}" ItemTemplate="{StaticResource CustomSiteRow}" IsTabStop="False" Margin="0,8,0,8" />
+        </StackPanel>
+      </Border>
 
       <!-- Allowlist -->
       <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,16">

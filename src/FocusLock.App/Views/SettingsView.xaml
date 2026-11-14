@@ -99,6 +99,22 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
+              <TextBlock Text="Close browsers when a session starts" Style="{StaticResource BodyText}" />
+              <TextBlock Text="Otherwise tabs that are already open keep working until you restart the browser." Style="{StaticResource CaptionText}" />
+            </StackPanel>
+            <ToggleButton Grid.Column="1"
+                          Style="{StaticResource ToggleSwitch}"
+                          IsChecked="{Binding CloseBrowsers}"
+                          VerticalAlignment="Center"
+                          AutomationProperties.Name="Close browsers when a session starts" />
+          </Grid>
+
+          <Grid Style="{StaticResource SettingRow}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
               <TextBlock Text="Also close game launchers" Style="{StaticResource BodyText}" />
               <TextBlock Text="Steam, Epic Games Launcher, GOG Galaxy, EA app, Ubisoft Connect, Battle.net and Riot Client." Style="{StaticResource CaptionText}" />
             </StackPanel>

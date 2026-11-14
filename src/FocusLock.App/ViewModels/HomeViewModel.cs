@@ -5,6 +5,7 @@ using FocusLock.App.Services;
 using FocusLock.Core.Common;
 using FocusLock.Core.Detection;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Websites;
 using Microsoft.Extensions.Logging;
 
 namespace FocusLock.App.ViewModels;
@@ -17,6 +18,7 @@ public sealed partial class HomeViewModel : ObservableObject
     private readonly SessionController _controller;
     private readonly GameCatalog _catalog;
     private readonly SettingsService _settings;
+    private readonly ISitePresetCatalog _sitePresets;
     private readonly ILogger<HomeViewModel> _logger;
     private int _selectedMinutes;
 
@@ -41,12 +43,14 @@ public sealed partial class HomeViewModel : ObservableObject
         SessionController controller,
         GameCatalog catalog,
         SettingsService settings,
+        ISitePresetCatalog sitePresets,
         IUiDispatcher dispatcher,
         ILogger<HomeViewModel> logger)
     {
         _controller = controller;
         _catalog = catalog;
         _settings = settings;
+        _sitePresets = sitePresets;
         _logger = logger;
 
         var current = settings.Current;
@@ -67,6 +71,7 @@ public sealed partial class HomeViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(PlanText));
             OnPropertyChanged(nameof(HasPlanText));
+            dispatcher.Post(() => OnPropertyChanged(nameof(StatusText)));
         };
         controller.PropertyChanged += OnControllerPropertyChanged;
     }
@@ -121,12 +126,10 @@ public sealed partial class HomeViewModel : ObservableObject
                 return "Looking for your games…";
             }
 
-            return _catalog.BlockedGameCount switch
-            {
-                0 => "No games found yet. Add some on the Blocklist page.",
-                1 => "1 game will be blocked",
-                var count => $"{count} games will be blocked",
-            };
+            var current = _settings.Current;
+            var websites = _sitePresets.All.Count(preset => current.BlockedSitePresetIds.Contains(preset.Id)) + current.CustomBlockedDomains.Count;
+            var summary = WebsiteText.BlockedSummary(_catalog.BlockedGameCount, websites);
+            return summary.Length > 0 ? summary : "No games found yet. Add some on the Blocklist page.";
         }
     }
 

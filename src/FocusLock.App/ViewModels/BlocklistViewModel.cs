@@ -6,6 +6,7 @@ using FocusLock.App.Services;
 using FocusLock.Core.Common;
 using FocusLock.Core.Detection;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Websites;
 using Microsoft.Extensions.Logging;
 
 namespace FocusLock.App.ViewModels;
@@ -18,6 +19,13 @@ public sealed partial class BlocklistViewModel : ObservableObject
     private readonly SessionController _controller;
     private readonly ILogger<BlocklistViewModel> _logger;
     private bool _applyingToggle;
+    private readonly ISitePresetCatalog _sitePresets;
+
+    [ObservableProperty]
+    private string _newSite = string.Empty;
+
+    [ObservableProperty]
+    private string _siteMessage = string.Empty;
 
     [ObservableProperty]
     private bool _isRefreshing;
@@ -27,6 +35,7 @@ public sealed partial class BlocklistViewModel : ObservableObject
         SettingsService settings,
         IFilePicker picker,
         SessionController controller,
+        ISitePresetCatalog sitePresets,
         IUiDispatcher dispatcher,
         ILogger<BlocklistViewModel> logger)
     {
@@ -34,6 +43,7 @@ public sealed partial class BlocklistViewModel : ObservableObject
         _settings = settings;
         _picker = picker;
         _controller = controller;
+        _sitePresets = sitePresets;
         _logger = logger;
 
         Groups =
@@ -61,6 +71,7 @@ public sealed partial class BlocklistViewModel : ObservableObject
         };
         controller.PropertyChanged += OnControllerPropertyChanged;
         Rebuild();
+        RebuildSites();
     }
 
     public IReadOnlyList<GameGroupViewModel> Groups { get; }
@@ -71,6 +82,94 @@ public sealed partial class BlocklistViewModel : ObservableObject
 
 
     public bool IsSessionRunning => _controller.IsRunning;
+
+    public ObservableCollection<SitePresetItemViewModel> SitePresets { get; } = [];
+
+    public ObservableCollection<CustomSiteItemViewModel> CustomSites { get; } = [];
+
+    public bool HasCustomSites => CustomSites.Count > 0;
+
+    public bool HasSiteMessage => SiteMessage.Length > 0;
+
+    public bool CanEditSites => !_controller.IsRunning;
+
+    partial void OnSiteMessageChanged(string value) => OnPropertyChanged(nameof(HasSiteMessage));
+
+    [RelayCommand]
+    private void AddSite()
+    {
+        var typed = NewSite;
+        if (string.IsNullOrWhiteSpace(typed))
+        {
+            return;
+        }
+
+        string? domain;
+        try
+        {
+            if (!DomainName.TryNormalize(typed, out domain))
+            {
+                domain = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Checking a website address failed");
+            domain = null;
+        }
+
+        if (domain is null)
+        {
+            SiteMessage = "That doesn't look like a website address. Try something like example.com.";
+            return;
+        }
+
+        if (_settings.Current.CustomBlockedDomains.Contains(domain, StringComparer.OrdinalIgnoreCase))
+        {
+            SiteMessage = $"{domain} is already on the list.";
+            return;
+        }
+
+        _settings.Update(settings => settings.CustomBlockedDomains.Add(domain));
+        NewSite = string.Empty;
+        SiteMessage = string.Empty;
+        RebuildSites();
+    }
+
+    private void RemoveSite(CustomSiteItemViewModel item)
+    {
+        _settings.Update(settings => settings.CustomBlockedDomains.RemoveAll(domain => string.Equals(domain, item.Domain, StringComparison.OrdinalIgnoreCase)));
+        SiteMessage = string.Empty;
+        RebuildSites();
+    }
+
+    private void SetPresetEnabled(SitePresetItemViewModel item, bool enabled) =>
+        _settings.Update(settings =>
+        {
+            settings.BlockedSitePresetIds.RemoveAll(id => id == item.Id);
+            if (enabled)
+            {
+                settings.BlockedSitePresetIds.Add(item.Id);
+            }
+        });
+
+    private void RebuildSites()
+    {
+        var current = _settings.Current;
+        SitePresets.Clear();
+        foreach (var preset in _sitePresets.All)
+        {
+            SitePresets.Add(new SitePresetItemViewModel(preset, current.BlockedSitePresetIds.Contains(preset.Id), SetPresetEnabled));
+        }
+
+        CustomSites.Clear();
+        foreach (var domain in current.CustomBlockedDomains)
+        {
+            CustomSites.Add(new CustomSiteItemViewModel(domain, RemoveSite));
+        }
+
+        OnPropertyChanged(nameof(HasCustomSites));
+    }
 
     [RelayCommand]
     private async Task RefreshAsync()
@@ -195,6 +294,7 @@ public sealed partial class BlocklistViewModel : ObservableObject
         if (e.PropertyName == nameof(SessionController.State))
         {
             OnPropertyChanged(nameof(IsSessionRunning));
+            OnPropertyChanged(nameof(CanEditSites));
         }
     }
 }
