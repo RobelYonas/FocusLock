@@ -1,4 +1,4 @@
-namespace FocusLock.App.Services;
+namespace FocusLock.Core.Common;
 
 /// <summary>Plain wording for website blocking, kept free of UI so it can move to Core and be tested.</summary>
 public static class WebsiteText

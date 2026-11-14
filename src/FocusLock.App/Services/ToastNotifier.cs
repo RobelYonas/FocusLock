@@ -70,10 +70,11 @@ public sealed class ToastNotifier
         switch (notice.Kind)
         {
             case WebsiteNoticeKind.Blocked:
-                Show("Websites blocked", "Blocked sites won't open until your focus time ends.");
-                break;
-            case WebsiteNoticeKind.RestartBrowsers:
-                Show("Restart your browser", $"Restart {WebsiteText.JoinNames(notice.Browsers)} so tabs that are already open are blocked too.");
+                Show(
+                    "Websites blocked",
+                    notice.Browsers.Count > 0
+                        ? $"Restart {WebsiteText.JoinNames(notice.Browsers)} so tabs that are already open are blocked too."
+                        : "Blocked sites won't open until your focus time ends.");
                 break;
             case WebsiteNoticeKind.PermissionDeclined:
                 ShowAlways("Websites aren't blocked this time", "The permission prompt was declined. Games are still blocked.");
