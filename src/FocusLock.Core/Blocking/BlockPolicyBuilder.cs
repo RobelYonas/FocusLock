@@ -1,12 +1,13 @@
 using FocusLock.Core.Abstractions;
 using FocusLock.Core.Detection;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Websites;
 using Microsoft.Extensions.Logging;
 
 namespace FocusLock.Core.Blocking;
 
-/// <summary>Builds the policy for a session from the catalog's enabled entries and the user's allowlist.</summary>
-public sealed class BlockPolicyBuilder(IFileSystem fileSystem, ILogger<BlockPolicyBuilder> logger)
+/// <summary>Builds the policy for a session from the catalog's enabled entries, the user's allowlist and the blocked sites.</summary>
+public sealed class BlockPolicyBuilder(IFileSystem fileSystem, ISitePresetCatalog sitePresets, ILogger<BlockPolicyBuilder> logger)
 {
     private const int MaxDepth = 3;
     private const int MaxDirectoriesPerRule = 400;
@@ -39,7 +40,33 @@ public sealed class BlockPolicyBuilder(IFileSystem fileSystem, ILogger<BlockPoli
             .Select(game => new BlockRule(game.Name, game.Kind, game.Target))
             .ToList();
 
-        return new BlockPolicy(rules, allow) { BlockTaskManager = settings.CommitToTimer };
+        return new BlockPolicy(rules, allow)
+        {
+            BlockTaskManager = settings.CommitToTimer,
+            BlockedDomains = ResolveDomains(settings),
+        };
+    }
+
+    /// <summary>Domains of the selected presets plus the custom domains with their variants, lowercase, valid and deduped.</summary>
+    private List<string> ResolveDomains(AppSettings settings)
+    {
+        var presetDomains = settings.BlockedSitePresetIds
+            .Select(id => sitePresets.All.FirstOrDefault(preset => preset.Id == id))
+            .OfType<SitePreset>()
+            .SelectMany(preset => preset.Domains);
+
+        var normalized = settings.CustomBlockedDomains
+            .Select(input => DomainName.TryNormalize(input, out var domain) ? domain : null)
+            .OfType<string>()
+            .ToList();
+        IReadOnlyList<string> customDomains = normalized.Count == 0 ? [] : DomainName.WithVariants(normalized);
+
+        return presetDomains
+            .Concat(customDomains)
+            .Select(domain => domain.ToLowerInvariant())
+            .Where(DomainName.IsValid)
+            .Distinct()
+            .ToList();
     }
 
     /// <summary>Names of executables found a few levels deep in a game folder. Bounded so huge game folders stay cheap.</summary>
