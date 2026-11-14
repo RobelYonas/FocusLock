@@ -83,8 +83,9 @@ internal sealed class DohPolicyBackup
 
     /// <summary>
     /// What clear writes back. Only the known values are considered: a saved value of the expected type and range is restored,
-    /// anything else (missing, out of range, wrong type, no backup at all) means the value is deleted.
-    /// Keys are only the known ones the backup says FocusLock created, children first; they are deleted only when empty.
+    /// anything else (missing, out of range, wrong type, unreadable backup) means the value is deleted.
+    /// Keys are only the known ones the backup says FocusLock created (all known ones for an unreadable backup),
+    /// children first; they are deleted only when empty.
     /// </summary>
     public static DohRestorePlan PlanRestore(DohPolicyBackup? backup)
     {
@@ -101,7 +102,8 @@ internal sealed class DohPolicyBackup
             })
             .ToList();
 
-        var created = backup?.CreatedKeys ?? [];
+        // An unreadable backup can't say which keys FocusLock created: all known keys are candidates (deleted only when empty).
+        var created = backup is null ? DohPolicies.Keys : backup.CreatedKeys ?? [];
         var keys = DohPolicies.Keys.Where(key => created.Contains(key, StringComparer.OrdinalIgnoreCase)).Reverse().ToList();
         return new DohRestorePlan(values, keys);
     }

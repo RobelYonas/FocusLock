@@ -35,7 +35,7 @@ internal interface ISiteBlockSystem
 }
 
 /// <summary>
-/// Runs in the elevated FocusLock process started with <c>--site-block apply &lt;domain&gt;… | clear</c>.
+/// Runs in the elevated FocusLock process started with <c>--site-block apply &lt;domain&gt;... | clear</c>.
 /// Writes no logs and shows nothing; the result is only the exit code (<see cref="SiteBlockExitCodes"/>).
 /// </summary>
 public sealed class SiteBlockHelper
@@ -111,10 +111,12 @@ public sealed class SiteBlockHelper
         return SiteBlockExitCodes.Success;
     }
 
-    // Order: restore policies, hosts, delete backup, flush. The backup goes only after everything else worked.
+    // Order: restore policies, hosts, delete backup. The hosts section is always removed, even when the
+    // policies fail, so the sites never stay blocked; the backup goes only after both worked.
     private int Clear()
     {
-        string? backupJson;
+        string? backupJson = null;
+        var policiesRestored = true;
         try
         {
             backupJson = _system.ReadBackup();
@@ -141,10 +143,21 @@ public sealed class SiteBlockHelper
         }
         catch (Exception)
         {
+            policiesRestored = false;
+        }
+
+        var hostsCleared = TryEditHosts(HostsFileEditor.Remove);
+        if (hostsCleared)
+        {
+            _system.FlushDns();
+        }
+
+        if (!policiesRestored)
+        {
             return SiteBlockExitCodes.PolicyFailed;
         }
 
-        if (!TryEditHosts(HostsFileEditor.Remove))
+        if (!hostsCleared)
         {
             return SiteBlockExitCodes.HostsFailed;
         }
@@ -161,7 +174,6 @@ public sealed class SiteBlockHelper
             }
         }
 
-        _system.FlushDns();
         return SiteBlockExitCodes.Success;
     }
 

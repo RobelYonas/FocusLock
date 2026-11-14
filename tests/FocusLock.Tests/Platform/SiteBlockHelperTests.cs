@@ -6,6 +6,7 @@ namespace FocusLock.Tests.Platform;
 public class SiteBlockHelperTests
 {
     private const string ChromeMode = @"SOFTWARE\Policies\Google\Chrome|DnsOverHttpsMode";
+    private const string BlockedHosts = "127.0.0.1 localhost\r\n# FocusLock begin\r\n0.0.0.0 youtube.com\r\n# FocusLock end\r\n";
 
     private readonly FakeSiteBlockSystem _system = new();
 
@@ -62,6 +63,7 @@ public class SiteBlockHelperTests
     {
         SetChromeMode("secure");
         Run("--site-block", "apply", "youtube.com");
+        _system.Hosts = BlockedHosts;
         _system.Log.Clear();
 
         var exitCode = Run("--site-block", "clear");
@@ -73,17 +75,50 @@ public class SiteBlockHelperTests
         Assert.Contains(@"SOFTWARE\Policies\Google\Chrome", _system.Keys);
         Assert.Contains(@"SOFTWARE\Policies\Microsoft", _system.Keys);
         Assert.Null(_system.Backup);
-        Assert.Equal(["delete-backup", "flush"], _system.Log.TakeLast(2));
+        Assert.Equal(["hosts", "flush", "delete-backup"], _system.Log.TakeLast(3));
     }
 
     [Fact]
     public void Clear_keeps_backup_when_hosts_cannot_be_written()
     {
         _system.Backup = new DohPolicyBackup().ToJson();
-        _system.Hosts = "127.0.0.1 localhost\r\n# FocusLock begin\r\n0.0.0.0 youtube.com\r\n# FocusLock end\r\n";
+        _system.Hosts = BlockedHosts;
         _system.FailHostsWrite = true;
 
         Assert.Equal(SiteBlockExitCodes.HostsFailed, Run("--site-block", "clear"));
+        Assert.NotNull(_system.Backup);
+    }
+
+    [Fact]
+    public void Clear_with_corrupt_backup_deletes_known_values_and_still_unblocks()
+    {
+        SetChromeMode("off");
+        _system.SetPolicyValue(@"SOFTWARE\Policies\Mozilla\Firefox\DNSOverHTTPS", "Locked", 1);
+        _system.Log.Clear();
+        _system.Backup = "{ not json";
+        _system.Hosts = BlockedHosts;
+
+        var exitCode = Run("--site-block", "clear");
+
+        Assert.Equal(SiteBlockExitCodes.Success, exitCode);
+        Assert.Empty(_system.Values);
+        Assert.DoesNotContain(@"SOFTWARE\Policies\Mozilla", _system.Keys);
+        Assert.DoesNotContain(@"SOFTWARE\Policies\Google\Chrome", _system.Keys);
+        Assert.Contains("hosts", _system.Log);
+        Assert.Null(_system.Backup);
+    }
+
+    [Fact]
+    public void Clear_still_unblocks_when_policies_fail_but_keeps_backup()
+    {
+        _system.Backup = new DohPolicyBackup().ToJson();
+        _system.Hosts = BlockedHosts;
+        _system.FailPolicies = true;
+
+        var exitCode = Run("--site-block", "clear");
+
+        Assert.Equal(SiteBlockExitCodes.PolicyFailed, exitCode);
+        Assert.Contains("hosts", _system.Log);
         Assert.NotNull(_system.Backup);
     }
 

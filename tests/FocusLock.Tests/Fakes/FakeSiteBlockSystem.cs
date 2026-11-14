@@ -76,6 +76,11 @@ internal sealed class FakeSiteBlockSystem : ISiteBlockSystem
 
     public void DeletePolicyValue(string subKey, string name)
     {
+        if (FailPolicies)
+        {
+            throw new UnauthorizedAccessException("Access denied.");
+        }
+
         Log.Add($"delete {name}");
         Values.Remove(subKey + "|" + name);
     }

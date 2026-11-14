@@ -74,11 +74,11 @@ internal sealed class WindowsSiteBlockSystem : ISiteBlockSystem
             return null;
         }
 
-        // Only a plain file created by an administrator is trusted; anything else was planted and is removed.
+        // Only a plain file created by an administrator is trusted; a planted link or file is removed, a planted folder fails safely.
         var attributes = File.GetAttributes(path);
         if (attributes.HasFlag(FileAttributes.ReparsePoint) || attributes.HasFlag(FileAttributes.Directory) || !IsAdminOwned(new FileInfo(path).GetAccessControl(AccessControlSections.Owner)))
         {
-            DeleteEntry(path, attributes);
+            RemoveUntrusted(path, attributes);
             return null;
         }
 
@@ -228,12 +228,27 @@ internal sealed class WindowsSiteBlockSystem : ISiteBlockSystem
     private static bool IsAdminOwned(ObjectSecurity security) =>
         security.GetOwner(typeof(SecurityIdentifier)) is SecurityIdentifier owner && (owner == Administrators || owner == LocalSystem);
 
-    private static void DeleteEntry(string path, FileAttributes attributes)
+    /// <summary>
+    /// Removes a planted link or file. A real folder is never deleted (a recursive delete as admin in a folder a user
+    /// controls can be redirected by swapping a subfolder for a junction), so that fails safely instead.
+    /// </summary>
+    private static void RemoveUntrusted(string path, FileAttributes attributes)
     {
-        // Deleting a link removes only the link; a recursive delete never follows junctions inside.
-        if (attributes.HasFlag(FileAttributes.Directory))
+        if (attributes.HasFlag(FileAttributes.ReparsePoint))
         {
-            Directory.Delete(path, recursive: !attributes.HasFlag(FileAttributes.ReparsePoint));
+            // Non-recursive: removes only the link, never its target.
+            if (attributes.HasFlag(FileAttributes.Directory))
+            {
+                Directory.Delete(path, recursive: false);
+            }
+            else
+            {
+                File.Delete(path);
+            }
+        }
+        else if (attributes.HasFlag(FileAttributes.Directory))
+        {
+            throw new IOException($"{path} is a folder FocusLock did not create.");
         }
         else
         {
@@ -243,7 +258,7 @@ internal sealed class WindowsSiteBlockSystem : ISiteBlockSystem
 
     /// <summary>
     /// Makes %ProgramData%\FocusLock a real folder owned by Administrators that only Administrators and SYSTEM can change.
-    /// A normal user can create that folder first, so a link or a user-owned folder is removed and created again.
+    /// A normal user can create that path first: a link or file there is removed, a user-owned folder makes this fail.
     /// </summary>
     private void EnsureBackupFolder()
     {
@@ -256,7 +271,7 @@ internal sealed class WindowsSiteBlockSystem : ISiteBlockSystem
                 && IsAdminOwned(new DirectoryInfo(path).GetAccessControl(AccessControlSections.Owner));
             if (!trusted)
             {
-                DeleteEntry(path, attributes);
+                RemoveUntrusted(path, attributes);
             }
         }
 

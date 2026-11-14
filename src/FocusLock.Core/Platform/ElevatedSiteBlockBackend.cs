@@ -30,7 +30,7 @@ public sealed class ElevatedSiteBlockBackend(ILogger<ElevatedSiteBlockBackend> l
             var hostsPath = SiteBlockPaths.HostsFile(environment.WindowsDirectory);
             return fileSystem.FileExists(hostsPath) && HostsFileEditor.ContainsBlock(fileSystem.ReadAllText(hostsPath));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex)
         {
             logger.LogWarning(ex, "Could not check whether a website block is in place");
             return false;

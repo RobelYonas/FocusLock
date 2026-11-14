@@ -78,12 +78,12 @@ public class DohPolicyBackupTests
     [InlineData("not json")]
     [InlineData("""{ "values": 5 }""")]
     [InlineData("""{ "values": { "chrome": { "existed": "yes" } } }""")]
-    public void Unreadable_backup_means_delete_everything_and_no_keys(string json)
+    public void Unreadable_backup_means_delete_every_known_value_and_key(string json)
     {
         var plan = DohPolicyBackup.PlanRestore(DohPolicyBackup.FromJson(json));
 
         Assert.All(plan.Values, value => Assert.Null(value.Value));
-        Assert.Empty(plan.KeysToDeleteIfEmpty);
+        Assert.Equal(DohPolicies.Keys.Reverse(), plan.KeysToDeleteIfEmpty);
     }
 
     private static Dictionary<string, object?> Plan(string json) =>
