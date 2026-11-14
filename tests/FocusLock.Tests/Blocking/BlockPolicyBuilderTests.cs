@@ -1,6 +1,7 @@
 using FocusLock.Core.Blocking;
 using FocusLock.Core.Detection;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Websites;
 using FocusLock.Tests.Fakes;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -9,6 +10,9 @@ namespace FocusLock.Tests.Blocking;
 public class BlockPolicyBuilderTests
 {
     private readonly FakeFileSystem _fileSystem = new();
+    private readonly FakeSitePresetCatalog _sitePresets = new(
+        new SitePreset("youtube", "YouTube", ["youtube.com", "www.youtube.com", "YouTu.be"]),
+        new SitePreset("reddit", "Reddit", ["reddit.com"]));
 
     [Fact]
     public void Includes_only_enabled_entries_and_collects_executable_names_for_folders()
@@ -88,14 +92,59 @@ public class BlockPolicyBuilderTests
         await catalog.RefreshAsync();
         detector.Games.Add(new DetectedGame("steam:9", "New Game", GameSource.Steam, @"C:\Games\New", MatchKind.Folder));
 
-        var policy = await new BlockPolicyBuilder(_fileSystem, NullLogger<BlockPolicyBuilder>.Instance).BuildFreshAsync(catalog, new AppSettings());
+        var policy = await new BlockPolicyBuilder(_fileSystem, _sitePresets, NullLogger<BlockPolicyBuilder>.Instance).BuildFreshAsync(catalog, new AppSettings());
 
         Assert.Equal("New Game", Assert.Single(policy.Rules).Name);
         Assert.Single(catalog.Entries);
     }
 
+    [Fact]
+    public void No_sites_selected_means_no_blocked_domains()
+    {
+        Assert.Empty(Build([], new AppSettings()).BlockedDomains);
+    }
+
+    [Fact]
+    public void Selected_presets_contribute_their_domains_and_unknown_ids_are_ignored()
+    {
+        var settings = new AppSettings { BlockedSitePresetIds = ["youtube", "gone"] };
+
+        var policy = Build([], settings);
+
+        Assert.Equal(["youtube.com", "www.youtube.com", "youtu.be"], policy.BlockedDomains);
+    }
+
+    [Fact]
+    public void Custom_domains_get_variants_and_everything_is_lowercased_deduped_and_valid()
+    {
+        var settings = new AppSettings
+        {
+            BlockedSitePresetIds = ["youtube"],
+            CustomBlockedDomains = ["https://www.YouTube.com/feed", "Example.org", "not a domain", "localhost"],
+        };
+
+        var policy = Build([], settings);
+
+        Assert.Equal(
+            ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com", "example.org", "www.example.org", "m.example.org"],
+            policy.BlockedDomains);
+    }
+
+    [Fact]
+    public void Invalid_preset_domains_are_dropped()
+    {
+        var builder = new BlockPolicyBuilder(
+            _fileSystem,
+            new FakeSitePresetCatalog(new SitePreset("bad", "Bad", ["Good.COM", "bad domain", "http://x.com/"])),
+            NullLogger<BlockPolicyBuilder>.Instance);
+
+        var policy = builder.Build([], new AppSettings { BlockedSitePresetIds = ["bad"] });
+
+        Assert.Equal(["good.com"], policy.BlockedDomains);
+    }
+
     private BlockPolicy Build(IReadOnlyList<CatalogEntry> entries, AppSettings settings) =>
-        new BlockPolicyBuilder(_fileSystem, NullLogger<BlockPolicyBuilder>.Instance).Build(entries, settings);
+        new BlockPolicyBuilder(_fileSystem, _sitePresets, NullLogger<BlockPolicyBuilder>.Instance).Build(entries, settings);
 
     /// <summary>A detector whose results can change between scans, like a game being installed.</summary>
     private sealed class ChangingDetector : IGameDetector

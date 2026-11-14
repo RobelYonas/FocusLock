@@ -3,6 +3,7 @@ using FocusLock.Core.Blocking;
 using FocusLock.Core.Detection;
 using FocusLock.Core.Sessions;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Websites;
 using FocusLock.Tests.Fakes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -26,14 +27,41 @@ public class InProcessSessionServiceTests
     private readonly List<SessionState> _states = [];
     private readonly List<BlockedLaunchNotice> _notices = [];
     private readonly List<SessionSummary> _summaries = [];
+    private readonly FakeSiteBlockBackend _siteBackend = new();
+    private readonly FakeProcessProvider _browserProcesses = new();
+    private readonly FakeProcessTerminator _browserTerminator = new();
+    private readonly WebsiteBlocker _websites;
+    private readonly List<WebsiteNotice> _websiteNotices = [];
 
     public InProcessSessionServiceTests()
     {
         _blocking = new BlockingEngine(_watcher, _terminator, new BlockRuleEvaluator(new FakeAppEnvironment()), NullLogger<BlockingEngine>.Instance);
-        _service = new InProcessSessionService(new FocusSessionEngine(), _blocking, _timer, _clock, _stats, TestSettings.Service(_settings), _logger);
+        _websites = new WebsiteBlocker(_siteBackend, NullLogger<WebsiteBlocker>.Instance);
+        var browsers = new BrowserCloser(_browserProcesses, _browserTerminator, NullLogger<BrowserCloser>.Instance);
+        _service = new InProcessSessionService(new FocusSessionEngine(), _blocking, _websites, browsers, _timer, _clock, _stats, TestSettings.Service(_settings), _logger);
         _service.StateChanged += (_, state) => _states.Add(state);
         _service.LaunchBlocked += (_, notice) => _notices.Add(notice);
         _service.Completed += (_, summary) => _summaries.Add(summary);
+        _service.WebsiteNotice += (_, notice) =>
+        {
+            lock (_websiteNotices)
+            {
+                _websiteNotices.Add(notice);
+            }
+        };
+    }
+
+    private static BlockPolicy SitePolicy => Policy with { BlockedDomains = ["youtube.com"] };
+
+    private List<WebsiteNoticeKind> NoticeKinds
+    {
+        get
+        {
+            lock (_websiteNotices)
+            {
+                return _websiteNotices.Select(notice => notice.Kind).ToList();
+            }
+        }
     }
 
     [Fact]
@@ -223,5 +251,210 @@ public class InProcessSessionServiceTests
         await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), Policy);
 
         Assert.Empty(_terminator.Terminated);
+    }
+
+    [Fact]
+    public async Task Start_blocks_the_websites_and_says_so()
+    {
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal(["apply:youtube.com"], _siteBackend.Calls);
+        Assert.Equal([WebsiteNoticeKind.Blocked], NoticeKinds);
+    }
+
+    [Fact]
+    public async Task Breaks_unblock_websites_and_focus_blocks_them_again_with_one_notice()
+    {
+        await _service.StartAsync(Pomodoro, SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        _clock.Advance(TimeSpan.FromMinutes(25).Add(TimeSpan.FromSeconds(1)));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+        Assert.Equal(["apply:youtube.com", "clear"], _siteBackend.Calls);
+
+        _clock.Advance(TimeSpan.FromMinutes(5));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal(["apply:youtube.com", "clear", "apply:youtube.com"], _siteBackend.Calls);
+        Assert.Equal([WebsiteNoticeKind.Blocked], NoticeKinds);
+    }
+
+    [Fact]
+    public async Task Finishing_on_time_unblocks_the_websites()
+    {
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        _clock.Advance(TimeSpan.FromMinutes(25));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal(["apply:youtube.com", "clear"], _siteBackend.Calls);
+    }
+
+    [Fact]
+    public async Task Ending_early_waits_until_the_websites_are_unblocked()
+    {
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+        await _siteBackend.WaitForCallAsync();
+        _siteBackend.Hold = new TaskCompletionSource();
+
+        var ending = _service.EndEarlyAsync();
+        await _siteBackend.WaitForCallAsync();
+        Assert.False(ending.IsCompleted);
+
+        _siteBackend.Hold.SetResult();
+        await ending;
+
+        Assert.Equal(["apply:youtube.com", "clear"], _siteBackend.Calls);
+    }
+
+    [Fact]
+    public async Task A_committed_session_keeps_websites_blocked_when_ending_early_is_tried()
+    {
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)) with { Committed = true }, SitePolicy);
+
+        await _service.EndEarlyAsync();
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal(["apply:youtube.com"], _siteBackend.Calls);
+    }
+
+    [Fact]
+    public async Task A_declined_permission_prompt_is_not_asked_again_this_session()
+    {
+        _siteBackend.ApplyResult = SiteBlockResult.UserCancelled;
+        await _service.StartAsync(Pomodoro, SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        _clock.Advance(TimeSpan.FromMinutes(25).Add(TimeSpan.FromSeconds(1)));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+        _clock.Advance(TimeSpan.FromMinutes(5));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal(SessionPhase.Focus, _service.State.Phase);
+        Assert.Equal(["apply:youtube.com"], _siteBackend.Calls);
+        Assert.Equal([WebsiteNoticeKind.PermissionDeclined], NoticeKinds);
+    }
+
+    [Fact]
+    public async Task A_failed_block_is_tried_again_next_focus_block_and_announced_once()
+    {
+        _siteBackend.ApplyResult = SiteBlockResult.Failed;
+        await _service.StartAsync(Pomodoro, SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        _clock.Advance(TimeSpan.FromMinutes(25).Add(TimeSpan.FromSeconds(1)));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+        _clock.Advance(TimeSpan.FromMinutes(5));
+        _timer.Tick();
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal(2, _siteBackend.Calls.Count(call => call.StartsWith("apply:", StringComparison.Ordinal)));
+        Assert.Equal([WebsiteNoticeKind.Failed], NoticeKinds);
+    }
+
+    [Fact]
+    public async Task A_declined_unblock_says_websites_are_still_blocked()
+    {
+        _siteBackend.ClearResult = SiteBlockResult.UserCancelled;
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        await _service.EndEarlyAsync();
+
+        Assert.Equal([WebsiteNoticeKind.Blocked, WebsiteNoticeKind.StillBlocked], NoticeKinds);
+    }
+
+    [Fact]
+    public async Task A_throwing_backend_is_announced_as_failed_and_the_session_keeps_running()
+    {
+        _siteBackend.ThrowOnCall = true;
+
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal([WebsiteNoticeKind.Failed], NoticeKinds);
+        Assert.True(_service.State.IsRunning);
+        Assert.True(_blocking.IsActive);
+    }
+
+    [Fact]
+    public async Task Without_blocked_sites_the_backend_and_browsers_are_left_alone()
+    {
+        _settings.CloseBrowsersOnSessionStart = true;
+        _browserProcesses.Add(30, "chrome.exe");
+
+        await _service.StartAsync(Pomodoro, Policy);
+        _clock.Advance(TimeSpan.FromMinutes(25).Add(TimeSpan.FromSeconds(1)));
+        _timer.Tick();
+        await _service.EndEarlyAsync();
+        await _websites.WhenIdleAsync();
+
+        Assert.Empty(_siteBackend.Calls);
+        Assert.Empty(_browserTerminator.Terminated);
+        Assert.Empty(NoticeKinds);
+    }
+
+    [Fact]
+    public async Task Browsers_are_closed_at_start_when_the_setting_is_on()
+    {
+        _settings.CloseBrowsersOnSessionStart = true;
+        _browserProcesses.Add(30, "chrome.exe");
+
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        Assert.Equal([30], _browserTerminator.Terminated);
+        var notice = Assert.Single(_websiteNotices);
+        Assert.Equal(WebsiteNoticeKind.Blocked, notice.Kind);
+        Assert.Empty(notice.Browsers);
+    }
+
+    [Fact]
+    public async Task Browsers_open_at_start_are_listed_in_the_first_blocked_notice()
+    {
+        _browserProcesses.Add(30, "chrome.exe");
+
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        Assert.Empty(_browserTerminator.Terminated);
+        var notice = Assert.Single(_websiteNotices);
+        Assert.Equal(WebsiteNoticeKind.Blocked, notice.Kind);
+        Assert.NotEmpty(notice.Browsers);
+    }
+
+    [Fact]
+    public async Task A_declined_block_gives_no_browser_reminder()
+    {
+        _siteBackend.ApplyResult = SiteBlockResult.UserCancelled;
+        _browserProcesses.Add(30, "chrome.exe");
+
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        var notice = Assert.Single(_websiteNotices);
+        Assert.Equal(WebsiteNoticeKind.PermissionDeclined, notice.Kind);
+        Assert.Empty(notice.Browsers);
+    }
+
+    [Fact]
+    public async Task A_failing_browser_check_does_not_stop_website_blocking()
+    {
+        _browserProcesses.ThrowOnList = true;
+
+        await _service.StartAsync(SessionPlan.Single(TimeSpan.FromMinutes(25)), SitePolicy);
+        await _websites.WhenIdleAsync();
+
+        Assert.True(_service.State.IsRunning);
+        Assert.Equal(["apply:youtube.com"], _siteBackend.Calls);
     }
 }

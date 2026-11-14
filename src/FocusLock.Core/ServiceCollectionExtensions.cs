@@ -7,6 +7,7 @@ using FocusLock.Core.Platform;
 using FocusLock.Core.Processes;
 using FocusLock.Core.Sessions;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Websites;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -49,6 +50,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<BlockRuleEvaluator>();
         services.AddSingleton<BlockPolicyBuilder>();
         services.AddSingleton<BlockingEngine>();
+
+        // Websites
+        services.AddSingleton<ISiteBlockBackend, ElevatedSiteBlockBackend>();
+        services.AddSingleton<ISitePresetCatalog, SitePresetCatalog>();
+        services.AddSingleton<WebsiteBlocker>();
+        services.AddSingleton<BrowserCloser>();
 
         // Sessions
         services.AddSingleton<FocusSessionEngine>();

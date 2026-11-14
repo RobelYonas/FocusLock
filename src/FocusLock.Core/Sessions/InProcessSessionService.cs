@@ -1,6 +1,7 @@
 using FocusLock.Core.Abstractions;
 using FocusLock.Core.Blocking;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Websites;
 using Microsoft.Extensions.Logging;
 
 namespace FocusLock.Core.Sessions;
@@ -12,6 +13,8 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
 
     private readonly FocusSessionEngine _engine;
     private readonly BlockingEngine _blocking;
+    private readonly WebsiteBlocker _websites;
+    private readonly BrowserCloser _browsers;
     private readonly ITickTimer _timer;
     private readonly IClock _clock;
     private readonly IStatsStore _stats;
@@ -22,10 +25,16 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
     private BlockPolicy _policy = BlockPolicy.Empty;
     private int _blockedAttempts;
     private bool _committed;
+    private bool _noticedBlocked;
+    private bool _noticedDeclined; // Also stops further website activation this session.
+    private bool _noticedFailed;
+    private IReadOnlyList<string> _openBrowsers = [];
 
     public InProcessSessionService(
         FocusSessionEngine engine,
         BlockingEngine blocking,
+        WebsiteBlocker websites,
+        BrowserCloser browsers,
         ITickTimer timer,
         IClock clock,
         IStatsStore stats,
@@ -34,11 +43,14 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
     {
         _engine = engine;
         _blocking = blocking;
+        _websites = websites;
+        _browsers = browsers;
         _timer = timer;
         _clock = clock;
         _stats = stats;
         _settings = settings;
         _logger = logger;
+        _websites.CallCompleted += OnWebsiteCallCompleted;
     }
 
     public event EventHandler<SessionState>? StateChanged;
@@ -47,9 +59,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
 
     public event EventHandler<SessionSummary>? Completed;
 
-#pragma warning disable CS0067 // Contract stub: Task C raises it.
     public event EventHandler<WebsiteNotice>? WebsiteNotice;
-#pragma warning restore CS0067
 
     public SessionState State { get; private set; } = SessionState.Idle;
 
@@ -68,6 +78,8 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
             _policy = policy;
             _blockedAttempts = 0;
             _committed = plan.Committed;
+            (_noticedBlocked, _noticedDeclined, _noticedFailed) = (false, false, false);
+            _openBrowsers = [];
             _blocking.LaunchBlocked += OnLaunchBlocked;
             state = Apply(_engine.Advance(now));
             _ticks = _timer.Start(TickInterval, Tick);
@@ -76,10 +88,20 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
         _logger.LogInformation("Session started: {Plan}", plan);
         StateChanged?.Invoke(this, state);
         _blocking.Activate(policy, _settings.Current.CloseAlreadyRunningGames);
+        if (policy.BlockedDomains.Count > 0)
+        {
+            var openBrowsers = HandleOpenBrowsers();
+            lock (_gate)
+            {
+                _openBrowsers = openBrowsers;
+            }
+        }
+
+        _websites.Activate(policy.BlockedDomains);
         return Task.CompletedTask;
     }
 
-    public Task EndEarlyAsync(CancellationToken cancellationToken = default)
+    public async Task EndEarlyAsync(CancellationToken cancellationToken = default)
     {
         SessionSummary? summary = null;
         lock (_gate)
@@ -93,9 +115,10 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
         if (summary is not null)
         {
             RaiseCompleted(summary);
-        }
 
-        return Task.CompletedTask;
+            // Quitting awaits this, so the app does not exit before the hosts file is cleaned.
+            await _websites.WhenIdleAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public void Dispose()
@@ -106,6 +129,8 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
             _ticks = null;
             _blocking.LaunchBlocked -= OnLaunchBlocked;
         }
+
+        _websites.CallCompleted -= OnWebsiteCallCompleted;
     }
 
     private void Tick()
@@ -114,6 +139,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
         SessionSummary? summary = null;
         var activateBlocking = false;
         var deactivateBlocking = false;
+        var websitesDeclined = false;
 
         lock (_gate)
         {
@@ -134,6 +160,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
                 {
                     activateBlocking = snapshot.Phase == SessionPhase.Focus;
                     deactivateBlocking = !activateBlocking;
+                    websitesDeclined = _noticedDeclined;
                 }
 
                 state = Apply(snapshot);
@@ -144,11 +171,18 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
         {
             _logger.LogInformation("Focus time again");
             _blocking.Activate(_policy, _settings.Current.CloseAlreadyRunningGames);
+
+            // The user declined the permission prompt this session; asking again every focus block would nag.
+            if (!websitesDeclined)
+            {
+                _websites.Activate(_policy.BlockedDomains);
+            }
         }
         else if (deactivateBlocking)
         {
             _logger.LogInformation("Break time");
             _blocking.Deactivate();
+            _websites.Deactivate();
         }
 
         if (state is not null)
@@ -184,6 +218,67 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
         StateChanged?.Invoke(this, state);
     }
 
+    /// <summary>
+    /// Tabs that are already open keep working until the browser restarts, so close browsers, or return the open ones
+    /// to name in the "Websites blocked" notice.
+    /// </summary>
+    private IReadOnlyList<string> HandleOpenBrowsers()
+    {
+        try
+        {
+            if (_settings.Current.CloseBrowsersOnSessionStart)
+            {
+                _browsers.CloseAll();
+                return [];
+            }
+
+            return _browsers.RunningBrowsers();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Checking for open browsers failed");
+            return [];
+        }
+    }
+
+    // Runs on the website blocker's worker thread.
+    private void OnWebsiteCallCompleted(object? sender, SiteBlockCall call)
+    {
+        WebsiteNoticeKind? kind = null;
+        IReadOnlyList<string> browsers = [];
+        lock (_gate)
+        {
+            if (call.IsClear)
+            {
+                if (call.Result is SiteBlockResult.UserCancelled or SiteBlockResult.Failed)
+                {
+                    kind = WebsiteNoticeKind.StillBlocked;
+                }
+            }
+            else if (_engine.IsRunning)
+            {
+                // Once per session each, so every focus block doesn't repeat the same message.
+                if (call.Result == SiteBlockResult.Applied && !_noticedBlocked)
+                {
+                    (_noticedBlocked, kind, browsers) = (true, WebsiteNoticeKind.Blocked, _openBrowsers);
+                }
+                else if (call.Result == SiteBlockResult.UserCancelled && !_noticedDeclined)
+                {
+                    (_noticedDeclined, kind) = (true, WebsiteNoticeKind.PermissionDeclined);
+                }
+                else if (call.Result == SiteBlockResult.Failed && !_noticedFailed)
+                {
+                    (_noticedFailed, kind) = (true, WebsiteNoticeKind.Failed);
+                }
+            }
+        }
+
+        if (kind is { } noticeKind)
+        {
+            WebsiteNotice?.Invoke(this, new WebsiteNotice(noticeKind, browsers));
+        }
+    }
+
     // Caller holds _gate.
     private SessionSummary Finish(DateTimeOffset now, bool endedEarly)
     {
@@ -199,6 +294,7 @@ public sealed class InProcessSessionService : ISessionService, IDisposable
     private void RaiseCompleted(SessionSummary summary)
     {
         _blocking.Deactivate();
+        _websites.Deactivate();
         try
         {
             _stats.Append(summary);
