@@ -28,12 +28,15 @@ Blocklist page: Instagram, YouTube, TikTok, Reddit, X (Twitter), Facebook, Snapc
   file through DNS-over-HTTPS, and it flushes the DNS cache.
 - Each change needs administrator rights, so Windows shows its permission (UAC) prompt. If you decline it, the
   session still runs and games are still blocked. Only website blocking is skipped.
+- Blocking a site also blocks it inside apps and on other pages. The Discord preset stops the Discord desktop app,
+  YouTube videos embedded on other sites stop loading, and "Log in with Facebook" on other sites won't work during
+  a focus block. YouTube Music (`music.youtube.com`) is left out on purpose, so it still works when YouTube is blocked.
 - During Pomodoro breaks the websites are open again. Blocking comes back for the next focus block.
 - The hosts section is removed when the session ends. If FocusLock crashed during a session, it removes the
   section the next time it starts.
 - Tabs that were already open before the session can keep working until the browser restarts. To avoid this,
-  turn on "Close browsers when a session starts" in Settings. It is off by default. FocusLock also shows a
-  reminder notification when a session starts.
+  turn on "Close browsers when a session starts" in Settings. It is off by default. If a browser is already open
+  when a session starts, FocusLock reminds you to restart it.
 - Chrome or Edge may show "Managed by your organization" during a session. This comes from the DNS policy
   described above and goes away when the session ends.
 

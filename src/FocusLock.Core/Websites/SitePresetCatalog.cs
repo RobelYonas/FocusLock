@@ -20,6 +20,7 @@ public sealed class SitePresetCatalog : ISitePresetCatalog
         ]),
         new("youtube", "YouTube",
         [
+            // music.youtube.com is left out on purpose: some people study with music.
             "youtube.com",
             "www.youtube.com",
             "m.youtube.com",
