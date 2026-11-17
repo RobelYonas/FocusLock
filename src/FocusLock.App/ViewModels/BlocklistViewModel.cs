@@ -54,6 +54,7 @@ public sealed partial class BlocklistViewModel : ObservableObject
             new GameGroupViewModel("EA app", "No EA games found.", GameSource.Ea),
             new GameGroupViewModel("Ubisoft Connect", "No Ubisoft games found.", GameSource.Ubisoft),
             new GameGroupViewModel("Battle.net", "No Battle.net games found.", GameSource.BattleNet),
+            new GameGroupViewModel("Riot Games", "No Riot games found.", GameSource.Riot),
             new GameGroupViewModel("Added by you", "Nothing added yet. Pick a game's .exe file or its folder.", GameSource.Custom)
             {
                 CanAdd = true,

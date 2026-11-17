@@ -40,6 +40,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGameDetector, UbisoftGameDetector>();
         services.AddSingleton<IGameDetector>(sp => PublisherGameDetector.Ea(sp.GetRequiredService<IRegistry>(), sp.GetRequiredService<ILogger<PublisherGameDetector>>()));
         services.AddSingleton<IGameDetector>(sp => PublisherGameDetector.BattleNet(sp.GetRequiredService<IRegistry>(), sp.GetRequiredService<ILogger<PublisherGameDetector>>()));
+        services.AddSingleton<IGameDetector>(sp => PublisherGameDetector.Riot(sp.GetRequiredService<IRegistry>(), sp.GetRequiredService<ILogger<PublisherGameDetector>>()));
         services.AddSingleton<IGameDetector, LauncherDetector>();
         services.AddSingleton<IGameDetector, CustomListDetector>();
         services.AddSingleton<GameCatalog>();

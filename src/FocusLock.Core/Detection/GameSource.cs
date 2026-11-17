@@ -10,4 +10,5 @@ public enum GameSource
     BattleNet,
     Launcher,
     Custom,
+    Riot,
 }

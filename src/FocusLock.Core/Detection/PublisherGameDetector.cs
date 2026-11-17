@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace FocusLock.Core.Detection;
 
 /// <summary>
-/// Finds a store's games in the Windows installed-programs list by publisher. Used for the EA app and Battle.net,
+/// Finds a store's games in the Windows installed-programs list by publisher. Used for the EA app, Battle.net and Riot,
 /// which register every game there. The launcher's own entry and Steam's copies of these games are skipped.
 /// </summary>
 public sealed class PublisherGameDetector(
@@ -29,6 +29,10 @@ public sealed class PublisherGameDetector(
 
     public static PublisherGameDetector BattleNet(IRegistry registry, ILogger<PublisherGameDetector> logger) =>
         new(GameSource.BattleNet, "Blizzard Entertainment", ["Battle.net"], registry, logger);
+
+    // Vanguard is Riot's anti-cheat, not a game; closing it is pointless and it runs as a protected service anyway.
+    public static PublisherGameDetector Riot(IRegistry registry, ILogger<PublisherGameDetector> logger) =>
+        new(GameSource.Riot, "Riot Games", ["Riot Client", "Riot Vanguard"], registry, logger);
 
     public Task<IReadOnlyList<DetectedGame>> DetectAsync(CancellationToken cancellationToken)
     {

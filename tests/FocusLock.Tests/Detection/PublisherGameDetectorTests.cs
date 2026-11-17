@@ -45,6 +45,22 @@ public class PublisherGameDetectorTests
     }
 
     [Fact]
+    public async Task Riot_finds_Riot_games_but_not_the_client_or_Vanguard()
+    {
+        // Real entries as the Riot Client writes them: per-user, forward slashes, a trailing space on the client's name.
+        AddProgram(RegistryRoot.CurrentUser, Uninstall64, "Riot Game Riot_Client.", "Riot Client ", "Riot Games, Inc", "C:/Riot Games/Riot Client");
+        AddProgram(RegistryRoot.LocalMachine, Uninstall64, "Riot Vanguard", "Riot Vanguard", "Riot Games, Inc.", @"C:\Program Files\Riot Vanguard");
+        AddProgram(RegistryRoot.CurrentUser, Uninstall64, "Riot Game league_of_legends.live", "League of Legends", "Riot Games, Inc", "C:/Riot Games/League of Legends");
+
+        var game = Assert.Single(await Detect(PublisherGameDetector.Riot));
+
+        Assert.Equal("riot:Riot Game league_of_legends.live", game.Id);
+        Assert.Equal(GameSource.Riot, game.Source);
+        Assert.Equal(@"C:\Riot Games\League of Legends", game.Target);
+        Assert.Equal(MatchKind.Folder, game.Kind);
+    }
+
+    [Fact]
     public async Task Skips_Steam_copies_entries_without_a_folder_other_publishers_and_duplicates()
     {
         // Steam already covers its own games; a second entry would ignore the user's Steam toggle.
