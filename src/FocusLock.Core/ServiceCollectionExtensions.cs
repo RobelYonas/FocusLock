@@ -7,6 +7,7 @@ using FocusLock.Core.Platform;
 using FocusLock.Core.Processes;
 using FocusLock.Core.Sessions;
 using FocusLock.Core.Settings;
+using FocusLock.Core.Updates;
 using FocusLock.Core.Websites;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -44,6 +45,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGameDetector, LauncherDetector>();
         services.AddSingleton<IGameDetector, CustomListDetector>();
         services.AddSingleton<GameCatalog>();
+        services.AddSingleton<AppChoiceFinder>();
+
+        // Updates
+        services.AddSingleton(sp => new UpdateChecker(
+            new HttpClient { Timeout = TimeSpan.FromSeconds(10) },
+            sp.GetRequiredService<ILogger<UpdateChecker>>()));
 
         // Blocking
         services.AddSingleton(ProcessWatcherOptions.Default);

@@ -17,6 +17,10 @@ and games are allowed during breaks. When the session ends you get a short summa
 - Starting FocusLock a second time just brings the running window back.
 - Games are found automatically from Steam, Epic, GOG, the EA app, Ubisoft Connect and Battle.net. The list is
   refreshed every time a session starts, so a game installed a minute ago is still blocked.
+- To block any other app, click "Add app…" under "Added by you" on the Blocklist page. Apps that are open right
+  now are listed first, then installed programs; type to search. "Browse" is still there for anything not listed.
+- At startup FocusLock asks GitHub (`api.github.com`) once for the latest release. If a newer version exists, a note
+  with a Download button appears under the navigation. Nothing else is sent, and being offline is ignored.
 
 ## Blocking websites
 
@@ -89,6 +93,9 @@ dotnet publish src\FocusLock.App -c Release -r win-x64 --self-contained true `
 ```
 
 The result is `publish\FocusLock.exe`. It runs on any 64-bit Windows 10/11 machine without installing .NET.
+
+Before tagging a GitHub release, set `<Version>` in `Directory.Build.props` to the tag (tag `v1.2.0` -> `1.2.0`).
+The in-app update check compares the two, so a release built with an older `<Version>` tells every user to update forever.
 
 ## Project layout
 

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FocusLock.App.Services;
@@ -20,6 +21,7 @@ public sealed partial class BlocklistViewModel : ObservableObject
     private readonly ILogger<BlocklistViewModel> _logger;
     private bool _applyingToggle;
     private readonly ISitePresetCatalog _sitePresets;
+    private readonly AppChoiceFinder _appChoices;
 
     [ObservableProperty]
     private string _newSite = string.Empty;
@@ -36,10 +38,12 @@ public sealed partial class BlocklistViewModel : ObservableObject
         IFilePicker picker,
         SessionController controller,
         ISitePresetCatalog sitePresets,
+        AppChoiceFinder appChoices,
         IUiDispatcher dispatcher,
         ILogger<BlocklistViewModel> logger)
     {
         _catalog = catalog;
+        _appChoices = appChoices;
         _settings = settings;
         _picker = picker;
         _controller = controller;
@@ -55,11 +59,10 @@ public sealed partial class BlocklistViewModel : ObservableObject
             new GameGroupViewModel("Ubisoft Connect", "No Ubisoft games found.", GameSource.Ubisoft),
             new GameGroupViewModel("Battle.net", "No Battle.net games found.", GameSource.BattleNet),
             new GameGroupViewModel("Riot Games", "No Riot games found.", GameSource.Riot),
-            new GameGroupViewModel("Added by you", "Nothing added yet. Pick a game's .exe file or its folder.", GameSource.Custom)
+            new GameGroupViewModel("Added by you", "Nothing added yet. Click \"Add app…\" and pick one from the list.", GameSource.Custom)
             {
                 CanAdd = true,
                 AddAppCommand = AddCustomAppCommand,
-                AddFolderCommand = AddCustomFolderCommand,
             },
         ];
 
@@ -191,10 +194,53 @@ public sealed partial class BlocklistViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private Task AddCustomAppAsync() => AddCustomAsync(_picker.PickExecutable(), isFolder: false);
+    private async Task AddCustomAppAsync()
+    {
+        IReadOnlyList<AppChoice> choices;
+        try
+        {
+            choices = await Task.Run(() => _appChoices.Find(WindowedProcessIds()));
+        }
+        catch (Exception ex)
+        {
+            // The picker still offers "browse", so an empty list is a usable fallback.
+            _logger.LogError(ex, "Listing apps for the picker failed");
+            choices = [];
+        }
 
-    [RelayCommand]
-    private Task AddCustomFolderAsync() => AddCustomAsync(_picker.PickFolder(), isFolder: true);
+        var added = _settings.Current.CustomBlocklist;
+        var choice = _picker.PickApp(choices.Where(app => !added.Any(entry => PathNormalizer.PathEquals(entry.Path, app.Path))).ToList());
+        if (choice is not null)
+        {
+            await AddCustomAsync(choice.Path, choice.IsFolder);
+        }
+    }
+
+    /// <summary>Processes with a visible window: the apps a person recognizes, not background services.</summary>
+    private static HashSet<int> WindowedProcessIds()
+    {
+        var ids = new HashSet<int>();
+        foreach (var process in Process.GetProcesses())
+        {
+            try
+            {
+                if (process.MainWindowHandle != IntPtr.Zero)
+                {
+                    ids.Add(process.Id);
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Exited while we looked.
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+
+        return ids;
+    }
 
     [RelayCommand]
     private void AddAllowedApp() => AddAllowed(_picker.PickExecutable(), isFolder: false);

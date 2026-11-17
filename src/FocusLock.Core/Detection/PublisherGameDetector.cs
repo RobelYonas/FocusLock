@@ -15,7 +15,7 @@ public sealed class PublisherGameDetector(
     IRegistry registry,
     ILogger<PublisherGameDetector> logger) : IGameDetector
 {
-    private static readonly (RegistryRoot Root, string Key)[] UninstallKeys =
+    internal static readonly (RegistryRoot Root, string Key)[] UninstallKeys =
     [
         (RegistryRoot.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
         (RegistryRoot.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),

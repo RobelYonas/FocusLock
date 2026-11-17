@@ -32,6 +32,22 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+
+      <!-- New version notice; stays until FocusLock restarts, unlike the toast -->
+      <Border Style="{StaticResource Card}"
+              Margin="4,20,4,0"
+              Padding="12"
+              Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibility}}">
+        <StackPanel>
+          <TextBlock Text="{Binding UpdateText}" Style="{StaticResource BodyText}" TextWrapping="Wrap" />
+          <Button Content="Download"
+                  Style="{StaticResource PrimaryButton}"
+                  Command="{Binding DownloadUpdateCommand}"
+                  HorizontalAlignment="Left"
+                  Margin="0,8,0,0"
+                  AutomationProperties.Name="Download the new version of FocusLock" />
+        </StackPanel>
+      </Border>
     </StackPanel>
 
     <!-- Page -->

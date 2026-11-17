@@ -72,8 +72,6 @@ public sealed partial class GameGroupViewModel(string title, string emptyText, G
 
     public IAsyncRelayCommand? AddAppCommand { get; init; }
 
-    public IAsyncRelayCommand? AddFolderCommand { get; init; }
-
     public void Replace(IEnumerable<GameItemViewModel> items)
     {
         Items.Clear();

@@ -8,7 +8,8 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <Product>FocusLock</Product>
-    <Version>0.1.0</Version>
+    <!-- Must match the GitHub release tag (v1.1.0 -> 1.1.0): the in-app update check compares the two. -->
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
 </Project>
