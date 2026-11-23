@@ -28,7 +28,7 @@
 
     <TextBox x:Name="Search"
              Grid.Row="1"
-             Margin="0,0,0,10"
+             Margin="0,0,0,12"
              TextChanged="OnSearchChanged"
              PreviewKeyDown="OnSearchKeyDown"
              AutomationProperties.Name="Search for an app" />

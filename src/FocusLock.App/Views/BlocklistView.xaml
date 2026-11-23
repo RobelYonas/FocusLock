@@ -38,14 +38,14 @@
       <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,16"
               Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}">
         <StackPanel>
-          <Grid Margin="16,14,16,12">
+          <Grid Margin="16,16,16,12">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
               <TextBlock Text="{Binding Title}" Style="{StaticResource SectionTitleText}" />
-              <TextBlock Text="{Binding CountText}" Style="{StaticResource CaptionText}" Margin="10,0,0,0" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding CountText}" Style="{StaticResource CaptionText}" Margin="8,0,0,0" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding CanAdd, Converter={StaticResource BoolToVisibility}}">
               <Button Content="Add app…" Command="{Binding AddAppCommand}" Style="{StaticResource PrimaryButton}" AutomationProperties.Name="Add an app to the blocklist" />
@@ -139,8 +139,8 @@
       </Grid>
       <TextBlock Text="Games on this list are closed while a focus session runs. Switch one off to leave it alone."
                  Style="{StaticResource SecondaryText}"
-                 Margin="0,0,0,6" />
-      <TextBlock Text="Changes here apply to your next session."
+                 Margin="0,0,0,4" />
+      <TextBlock Text="Changes here apply to your next session"
                  Style="{StaticResource CaptionText}"
                  Margin="0,0,0,16"
                  Visibility="{Binding IsSessionRunning, Converter={StaticResource BoolToVisibility}}" />
@@ -154,12 +154,12 @@
       <!-- Websites -->
       <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,16" IsEnabled="{Binding CanEditSites}">
         <StackPanel>
-          <StackPanel Margin="16,14,16,12">
+          <StackPanel Margin="16,16,16,12">
             <TextBlock Text="Websites" Style="{StaticResource SectionTitleText}" />
-            <TextBlock Text="These sites won't open in any browser while a focus session runs." Style="{StaticResource CaptionText}" Margin="0,4,0,0" />
+            <TextBlock Text="These sites won't open in any browser while a focus session runs" Style="{StaticResource CaptionText}" Margin="0,4,0,0" />
           </StackPanel>
           <ItemsControl ItemsSource="{Binding SitePresets}" ItemTemplate="{StaticResource SitePresetRow}" IsTabStop="False" />
-          <Grid Margin="16,14,16,0">
+          <Grid Margin="16,12,16,0">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
@@ -176,7 +176,7 @@
           </Grid>
           <TextBlock Text="{Binding SiteMessage}"
                      Style="{StaticResource CaptionText}"
-                     Margin="16,6,16,0"
+                     Margin="16,4,16,0"
                      Visibility="{Binding HasSiteMessage, Converter={StaticResource BoolToVisibility}}" />
           <TextBlock Text="No websites added yet. Type an address like example.com."
                      Style="{StaticResource SecondaryText}"
@@ -189,21 +189,21 @@
       <!-- Allowlist -->
       <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,16">
         <StackPanel>
-          <Grid Margin="16,14,16,12">
+          <Grid Margin="16,16,16,12">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,16,0">
               <TextBlock Text="Always allowed" Style="{StaticResource SectionTitleText}" />
-              <TextBlock Text="These are never closed, even if they match something above." Style="{StaticResource CaptionText}" Margin="0,4,0,0" />
+              <TextBlock Text="These are never closed, even if they match something above" Style="{StaticResource CaptionText}" Margin="0,4,0,0" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
               <Button Content="Add app…" Command="{Binding AddAllowedAppCommand}" Margin="0,0,8,0" AutomationProperties.Name="Add an allowed app" />
               <Button Content="Add folder…" Command="{Binding AddAllowedFolderCommand}" AutomationProperties.Name="Add an allowed folder" />
             </StackPanel>
           </Grid>
-          <TextBlock Text="Nothing here yet."
+          <TextBlock Text="Nothing here yet"
                      Style="{StaticResource SecondaryText}"
                      Margin="16,0,16,16"
                      Visibility="{Binding HasAllowed, Converter={StaticResource InvertedBoolToVisibility}}" />

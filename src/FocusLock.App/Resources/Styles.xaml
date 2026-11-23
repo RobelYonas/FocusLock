@@ -16,6 +16,13 @@
   <SolidColorBrush x:Key="AppAccentPressedBrush" Color="{StaticResource AppAccentPressedColor}" />
   <SolidColorBrush x:Key="AppOnAccentBrush" Color="#FFFFFF" />
 
+  <!-- Built-in controls (sliders, text box focus, list selection) take the app accent instead of the Windows one, so there is one accent. -->
+  <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="{StaticResource AppAccentColor}" />
+  <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="{StaticResource AppAccentHoverColor}" />
+  <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="{StaticResource AppAccentPressedColor}" />
+  <SolidColorBrush x:Key="SliderThumbBackground" Color="{StaticResource AppAccentColor}" />
+  <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{StaticResource AppAccentHoverColor}" />
+
   <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
   <converters:InvertedBoolToVisibilityConverter x:Key="InvertedBoolToVisibility" />
 
@@ -89,7 +96,7 @@
     <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
     <Setter Property="FontSize" Value="15" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Padding" Value="28,10" />
+    <Setter Property="Padding" Value="24,8" />
     <Setter Property="MinHeight" Value="40" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="FocusVisualStyle" Value="{StaticResource AppFocusVisual}" />
@@ -151,7 +158,7 @@
     <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
     <Setter Property="FontSize" Value="14" />
-    <Setter Property="Padding" Value="18,7" />
+    <Setter Property="Padding" Value="16,8" />
     <Setter Property="Margin" Value="0,0,8,0" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="FocusVisualStyle" Value="{StaticResource AppFocusVisual}" />
@@ -162,7 +169,7 @@
                   Background="{DynamicResource ControlFillColorDefaultBrush}"
                   BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                   BorderThickness="1"
-                  CornerRadius="18"
+                  CornerRadius="6"
                   Padding="{TemplateBinding Padding}"
                   SnapsToDevicePixels="True">
             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
@@ -190,7 +197,7 @@
     <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
     <Setter Property="FontSize" Value="14" />
-    <Setter Property="Height" Value="38" />
+    <Setter Property="Height" Value="36" />
     <Setter Property="Margin" Value="0,2" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="FocusVisualStyle" Value="{StaticResource AppFocusVisual}" />
@@ -201,7 +208,7 @@
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="12" />
-                <ColumnDefinition Width="28" />
+                <ColumnDefinition Width="24" />
                 <ColumnDefinition Width="*" />
               </Grid.ColumnDefinitions>
               <Rectangle x:Name="Indicator"
@@ -219,7 +226,7 @@
                          FontSize="16"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center" />
-              <ContentPresenter Grid.Column="2" Margin="4,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
+              <ContentPresenter Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
             </Grid>
           </Border>
           <ControlTemplate.Triggers>
@@ -229,7 +236,6 @@
             <Trigger Property="IsChecked" Value="True">
               <Setter TargetName="Root" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
               <Setter TargetName="Indicator" Property="Visibility" Value="Visible" />
-              <Setter Property="FontWeight" Value="SemiBold" />
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -292,7 +298,7 @@
 
   <!-- One row inside a list card -->
   <Style x:Key="ListRow" TargetType="Border">
-    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="Padding" Value="16,12" />
     <Setter Property="BorderBrush" Value="{DynamicResource DividerStrokeColorDefaultBrush}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
   </Style>

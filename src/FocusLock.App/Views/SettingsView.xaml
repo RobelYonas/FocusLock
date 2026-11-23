@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <UserControl.Resources>
     <Style x:Key="SettingRow" TargetType="Grid">
-      <Setter Property="Margin" Value="0,0,0,18" />
+      <Setter Property="Margin" Value="0,0,0,16" />
     </Style>
   </UserControl.Resources>
 
@@ -14,7 +14,7 @@
       <!-- Pomodoro -->
       <Border Style="{StaticResource Card}" Margin="0,0,0,16">
         <StackPanel>
-          <TextBlock Text="Pomodoro" Style="{StaticResource SectionTitleText}" Margin="0,0,0,14" />
+          <TextBlock Text="Pomodoro" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12" />
 
           <Grid Style="{StaticResource SettingRow}">
             <Grid.ColumnDefinitions>
@@ -75,7 +75,7 @@
       <!-- Blocking -->
       <Border Style="{StaticResource Card}" Margin="0,0,0,16">
         <StackPanel>
-          <TextBlock Text="Blocking" Style="{StaticResource SectionTitleText}" Margin="0,0,0,14" />
+          <TextBlock Text="Blocking" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12" />
 
           <Grid Style="{StaticResource SettingRow}">
             <Grid.ColumnDefinitions>
@@ -84,7 +84,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
               <TextBlock Text="Close games that are already open when a session starts" Style="{StaticResource BodyText}" />
-              <TextBlock Text="Otherwise only games started during the session are closed." Style="{StaticResource CaptionText}" />
+              <TextBlock Text="Otherwise only games started during the session are closed" Style="{StaticResource CaptionText}" />
             </StackPanel>
             <ToggleButton Grid.Column="1"
                           Style="{StaticResource ToggleSwitch}"
@@ -100,7 +100,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
               <TextBlock Text="Close browsers when a session starts" Style="{StaticResource BodyText}" />
-              <TextBlock Text="Otherwise tabs that are already open keep working until you restart the browser." Style="{StaticResource CaptionText}" />
+              <TextBlock Text="Otherwise tabs that are already open keep working until you restart the browser" Style="{StaticResource CaptionText}" />
             </StackPanel>
             <ToggleButton Grid.Column="1"
                           Style="{StaticResource ToggleSwitch}"
@@ -116,7 +116,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
               <TextBlock Text="Also close game launchers" Style="{StaticResource BodyText}" />
-              <TextBlock Text="Steam, Epic Games Launcher, GOG Galaxy, EA app, Ubisoft Connect, Battle.net and Riot Client." Style="{StaticResource CaptionText}" />
+              <TextBlock Text="Steam, Epic Games Launcher, GOG Galaxy, EA app, Ubisoft Connect, Battle.net and Riot Client" Style="{StaticResource CaptionText}" />
             </StackPanel>
             <ToggleButton Grid.Column="1"
                           Style="{StaticResource ToggleSwitch}"
@@ -146,7 +146,7 @@
       <!-- General -->
       <Border Style="{StaticResource Card}">
         <StackPanel>
-          <TextBlock Text="General" Style="{StaticResource SectionTitleText}" Margin="0,0,0,14" />
+          <TextBlock Text="General" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12" />
 
           <Grid Style="{StaticResource SettingRow}">
             <Grid.ColumnDefinitions>
@@ -155,7 +155,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
               <TextBlock Text="Start FocusLock when I sign in" Style="{StaticResource BodyText}" />
-              <TextBlock Text="It starts minimized, in the corner of the taskbar." Style="{StaticResource CaptionText}" />
+              <TextBlock Text="It starts minimized, in the corner of the taskbar" Style="{StaticResource CaptionText}" />
             </StackPanel>
             <ToggleButton Grid.Column="1"
                           Style="{StaticResource ToggleSwitch}"
@@ -171,7 +171,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
               <TextBlock Text="Theme" Style="{StaticResource BodyText}" />
-              <TextBlock Text="Light or dark colors for FocusLock." Style="{StaticResource CaptionText}" />
+              <TextBlock Text="Light or dark colors for FocusLock" Style="{StaticResource CaptionText}" />
             </StackPanel>
             <!-- Item order must match the AppTheme enum: System, Light, Dark. -->
             <ComboBox Grid.Column="1"
@@ -192,7 +192,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
               <TextBlock Text="Show a notification when a game is closed" Style="{StaticResource BodyText}" />
-              <TextBlock Text="A small note in the corner of the screen, also for breaks." Style="{StaticResource CaptionText}" />
+              <TextBlock Text="A small note in the corner of the screen, also for breaks" Style="{StaticResource CaptionText}" />
             </StackPanel>
             <ToggleButton Grid.Column="1"
                           Style="{StaticResource ToggleSwitch}"

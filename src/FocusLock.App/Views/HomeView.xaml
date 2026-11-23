@@ -19,7 +19,7 @@
         <StackPanel>
           <TextBlock Text="{Binding SummaryTitle}" Style="{StaticResource SectionTitleText}" />
           <TextBlock Text="{Binding SummaryBody}" Style="{StaticResource SecondaryText}" Margin="0,4,0,0" />
-          <Button Content="Done" Command="{Binding DismissSummaryCommand}" HorizontalAlignment="Left" Margin="0,14,0,0" />
+          <Button Content="Done" Command="{Binding DismissSummaryCommand}" HorizontalAlignment="Left" Margin="0,16,0,0" />
         </StackPanel>
       </Border>
 
@@ -61,7 +61,7 @@
                     HorizontalAlignment="Center"
                     Margin="0,16,0,0"
                     Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
-          <TextBlock x:Name="MinutesLabel" Text="Minutes" Style="{StaticResource BodyText}" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <TextBlock x:Name="MinutesLabel" Text="Minutes" Style="{StaticResource BodyText}" VerticalAlignment="Center" Margin="0,0,8,0" />
           <TextBox Width="96"
                    Text="{Binding CustomMinutesText, UpdateSourceTrigger=PropertyChanged}"
                    AutomationProperties.LabeledBy="{Binding ElementName=MinutesLabel}" />
@@ -94,7 +94,7 @@
         <TextBlock Text="{Binding TodayText}"
                    Style="{StaticResource CaptionText}"
                    HorizontalAlignment="Center"
-                   Margin="0,6,0,0" />
+                   Margin="0,4,0,0" />
       </StackPanel>
     </Grid>
   </ScrollViewer>

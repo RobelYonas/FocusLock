@@ -19,7 +19,7 @@
 
     <!-- Navigation rail -->
     <StackPanel Grid.Column="0" Margin="8,20,8,16">
-      <TextBlock Text="FocusLock" Style="{StaticResource BrandText}" Margin="14,0,0,18" />
+      <TextBlock Text="FocusLock" Style="{StaticResource BrandText}" Margin="16,0,0,16" />
       <ItemsControl ItemsSource="{Binding Pages}" IsTabStop="False" KeyboardNavigation.TabNavigation="Once">
         <ItemsControl.ItemTemplate>
           <DataTemplate>

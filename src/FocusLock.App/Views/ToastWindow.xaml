@@ -26,7 +26,7 @@
     </Border.Effect>
     <StackPanel>
       <TextBlock x:Name="TitleText" Style="{StaticResource BodyText}" FontWeight="SemiBold" />
-      <TextBlock x:Name="BodyText" Style="{StaticResource SecondaryText}" Margin="0,3,0,0" />
+      <TextBlock x:Name="BodyText" Style="{StaticResource SecondaryText}" Margin="0,4,0,0" />
     </StackPanel>
   </Border>
 </Window>
